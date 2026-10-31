@@ -80,3 +80,14 @@ Early development. The web UI and basic checks are implemented; additional SEO a
 ## Author
 
 **Casta** · [@ebe-ship-it](https://github.com/ebe-ship-it)
+
+## Deploy publicly (Render)
+
+A `render.yaml` blueprint is included and starts the app with Gunicorn, not Flask's development server.
+
+1. Sign in to [Render](https://render.com/) and choose **New → Blueprint**.
+2. Connect the `ebe-ship-it/casta-web-doctor` GitHub repository and select `main`.
+3. Review the `render.yaml` service and create the web service.
+4. Wait for the deployment to finish, then open the `onrender.com` URL Render assigns. Test `/health` and the scan form from your phone.
+
+Free services may sleep when idle and can take a little time to wake. Before using this as a public scanning service at scale, add rate limiting and enforce outbound network restrictions at the hosting/network layer to reduce SSRF and abuse risks.
