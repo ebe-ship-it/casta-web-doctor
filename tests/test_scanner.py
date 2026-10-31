@@ -79,7 +79,7 @@ def test_scan_success(monkeypatch):
 
 def test_scan_reports_final_url(monkeypatch):
     monkeypatch.setattr(
-        requests,
+        scanner._http_session,
         "get",
         lambda url, **kw: FakeResponse(url="https://www.example.com/home"),
     )
