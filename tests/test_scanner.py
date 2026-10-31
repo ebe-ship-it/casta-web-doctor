@@ -136,6 +136,18 @@ def test_scan_handles_timeout(monkeypatch):
     assert result["error"]["code"] == "timeout"
 
 
+def test_scan_reports_dns_failure_separately_from_invalid_url(monkeypatch):
+    def fail_dns(host, port, type=socket.SOCK_STREAM):
+        raise socket.gaierror("temporary resolver failure")
+
+    monkeypatch.setattr(scanner.socket, "getaddrinfo", fail_dns)
+
+    result = scan_website("valid-looking-domain.example")
+
+    assert result["ok"] is False
+    assert result["error"]["code"] == "dns_failed"
+
+
 def test_invalid_url_does_not_make_request(monkeypatch):
     def fake_get(url, **kw):
         raise AssertionError("Request should not happen")
