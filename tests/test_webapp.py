@@ -1,3 +1,5 @@
+import pytest
+
 import webapp
 from webapp import app
 
@@ -28,6 +30,22 @@ def test_health_endpoint():
 def test_api_rejects_non_json():
     response = app.test_client().post("/api/scan", data="example.com")
     assert response.status_code == 415
+    assert response.get_json()["error"]["code"] == "invalid_request"
+
+
+@pytest.mark.parametrize("payload", [
+    [],
+    ["example.com"],
+    "example.com",
+    42,
+    True,
+    None,
+])
+def test_api_rejects_json_that_is_not_an_object(payload):
+    response = app.test_client().post("/api/scan", json=payload)
+
+    assert response.status_code == 400
+    assert response.get_json()["ok"] is False
     assert response.get_json()["error"]["code"] == "invalid_request"
 
 
