@@ -60,13 +60,13 @@ def test_api_rejects_json_null():
 
 
 def test_api_rejects_invalid_url():
-    response = app.test_client().post("/api/scan", json={"url": "ftp://example.com"})
+    response = app.test_client().post("/api/scan", json={"url": "ftp://example.com", "authorized": True})
     assert response.status_code == 400
     assert response.get_json()["ok"] is False
 
 
 def test_api_rejects_private_destination():
-    response = app.test_client().post("/api/scan", json={"url": "http://127.0.0.1"})
+    response = app.test_client().post("/api/scan", json={"url": "http://127.0.0.1", "authorized": True})
     assert response.status_code == 400
     assert response.get_json()["ok"] is False
 
@@ -96,7 +96,7 @@ def test_api_returns_successful_scan(monkeypatch):
     }
     monkeypatch.setattr(webapp, "scan_website", lambda url: fake_report)
 
-    response = app.test_client().post("/api/scan", json={"url": "example.com"})
+    response = app.test_client().post("/api/scan", json={"url": "example.com", "authorized": True})
 
     assert response.status_code == 200
     assert response.get_json()["ok"] is True
@@ -109,7 +109,7 @@ def test_api_returns_service_unavailable_when_hosted_scanning_is_unprotected(mon
     monkeypatch.setenv("RENDER", "true")
     monkeypatch.delenv("SSRF_EGRESS_PROTECTED", raising=False)
 
-    response = app.test_client().post("/api/scan", json={"url": "example.com"})
+    response = app.test_client().post("/api/scan", json={"url": "example.com", "authorized": True})
 
     assert response.status_code == 503
     assert response.get_json()["ok"] is False
@@ -140,7 +140,7 @@ def test_stream_endpoint_delivers_real_progress_and_report(monkeypatch):
     monkeypatch.setattr(webapp, "scan_website", fake_scan)
     response = app.test_client().post(
         "/api/scan/stream",
-        json={"url": "example.com"},
+        json={"url": "example.com", "authorized": True},
         buffered=True,
     )
 
@@ -158,3 +158,15 @@ def test_stream_endpoint_rejects_non_object_json():
     response = app.test_client().post("/api/scan/stream", json=["example.com"])
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "invalid_request"
+
+
+def test_api_requires_authorization_acknowledgement():
+    response = app.test_client().post("/api/scan", json={"url": "example.com"})
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "authorization_required"
+
+
+def test_stream_requires_authorization_acknowledgement():
+    response = app.test_client().post("/api/scan/stream", json={"url": "example.com"})
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "authorization_required"
