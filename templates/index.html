@@ -4,9 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5f3ee">
-<meta name="description" content="A clear, practical website health check from Casta Web Doctor. Check availability, response time, HTTPS, redirects and security headers.">
+<meta name="description" content="Free website health checker for developers and small businesses. Check HTTP status, response time, HTTPS, redirects and common security headers with clear explanations.">
+<meta name="robots" content="index,follow,max-image-preview:large">
 <meta name="color-scheme" content="light">
-<title>Casta Web Doctor — A clearer view of your website</title>
+<meta name="author" content="Casta Web Doctor">
+<link rel="canonical" href="{{ site_url }}/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Casta Web Doctor">
+<meta property="og:title" content="Free Website Health Checker | Casta Web Doctor">
+<meta property="og:description" content="Check website availability, speed, HTTPS, redirects and security headers in one clear report.">
+<meta property="og:url" content="{{ site_url }}/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free Website Health Checker | Casta Web Doctor">
+<meta name="twitter:description" content="Check website availability, speed, HTTPS, redirects and security headers in one clear report.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Casta Web Doctor",
+  "url": "{{ site_url }}/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "description": "A free website health checker that reports HTTP status, response time, HTTPS use, redirects and common security headers.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<title>Free Website Health Checker | Casta Web Doctor</title>
 <style>
 :root{--paper:#f5f3ee;--white:#fffefa;--ink:#17211d;--muted:#66716a;--line:#dcded6;--green:#246b50;--green-soft:#e5eee7;--orange:#dc7147;--orange-soft:#f7e7df;--shadow:0 22px 60px rgba(30,43,34,.08);--radius:22px}
 *{box-sizing:border-box}
@@ -235,6 +258,34 @@ h1 em{color:#355c45}
 </section>
 <section id="results" class="results" hidden aria-live="polite" aria-busy="false"></section>
 </main>
+<section class="seo-guide" aria-labelledby="seo-guide-title">
+  <div class="kicker">Website basics</div>
+  <h2 id="seo-guide-title">A simple website health checker</h2>
+  <p>Casta Web Doctor is a free website checker for developers, learners and small-business owners who want a quick first look at a public website. Enter a website address to review its HTTP response, response time, HTTPS connection, redirects and selected browser security headers.</p>
+  <div class="seo-guide-grid">
+    <article><h3>Check website availability</h3><p>Review the HTTP status code to understand whether a server responded successfully or returned an error. A single check is only a snapshot, not an uptime guarantee.</p></article>
+    <article><h3>Measure response time</h3><p>See how long the request took to receive response headers. This is a basic diagnostic measurement, not a full page-load or Core Web Vitals test.</p></article>
+    <article><h3>Review HTTPS and redirects</h3><p>Check whether the final connection uses HTTPS and see how many redirects occurred. HTTPS helps protect data in transit, but does not by itself prove a site is trustworthy.</p></article>
+    <article><h3>Understand security headers</h3><p>Learn whether selected browser security headers are present, with plain-language explanations. Results are informational and do not replace a professional security review.</p></article>
+  </div>
+  <h3>Frequently asked questions</h3>
+  <details><summary>Is Casta Web Doctor free?</summary><p>Yes. The website checker is offered free of charge during its early beta.</p></details>
+  <details><summary>Does this tool prove a website is secure?</summary><p>No. It performs limited checks only. A missing header is not automatically a vulnerability, and a successful result is not a security certification.</p></details>
+  <details><summary>Can I scan any website?</summary><p>Only scan websites you own or have explicit permission to assess. Do not submit private addresses, credentials or confidential information.</p></details>
+</section>
+<style>
+.seo-guide{padding:0 0 70px;max-width:850px}
+.seo-guide h2{font:500 clamp(30px,4vw,42px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.04em;margin:14px 0}
+.seo-guide>p,.seo-guide-grid p,.seo-guide details p{font-size:13px;color:var(--muted);line-height:1.8}
+.seo-guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:24px 0 30px}
+.seo-guide-grid article{border:1px solid var(--line);border-radius:10px;padding:17px;background:rgba(255,255,255,.5)}
+.seo-guide-grid h3,.seo-guide>h3{font-size:13px;margin:0 0 6px}
+.seo-guide-grid p{margin:0}
+.seo-guide details{border-bottom:1px solid var(--line);padding:14px 0}
+.seo-guide summary{cursor:pointer;font-size:13px;font-weight:750}
+.seo-guide details p{margin:8px 0 0}
+@media(max-width:560px){.seo-guide{padding-bottom:46px}.seo-guide-grid{grid-template-columns:1fr}}
+</style>
 <footer class="footer"><div><strong>CASTA WEB DOCTOR</strong> · Built for practical checks.<div class="policy-links"><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/ACCEPTABLE_USE.md" target="_blank" rel="noopener noreferrer">Acceptable use</a></div></div><div>Early beta · Not a full security audit.</div></footer>
 </div>
 <script>
