@@ -80,7 +80,7 @@ This is a first-pass diagnostic tool, not a penetration test and not a guarantee
 
 The scanner only accepts HTTP(S) and each scheme's standard port, rejects non-public IP addresses, and manually validates every redirect. DNS can change between validation and the actual HTTP connection, so DNS checks alone cannot eliminate DNS-rebinding SSRF. A production deployment must enforce outbound network rules that block loopback, private, link-local, metadata-service, and other internal destinations.
 
-The API has per-IP limits of 20 requests per minute and 300 per day. The default limiter store is in-memory, which is suitable only for a small beta and is not shared across multiple workers or instances. For a public multi-worker deployment, configure a shared Redis-compatible store with the `RATELIMIT_STORAGE_URI` environment variable. Monitor abuse and apply hosting/network egress restrictions before opening the scanner to wider public use.
+The API has per-IP limits of 20 requests per minute and 300 per day. The default limiter store is in-memory, which is suitable only for a small beta and is not shared across multiple workers or instances. The Render blueprint uses one worker so the in-memory limits are consistent within that service instance. For a public multi-worker deployment, configure a shared Redis-compatible store with the `RATELIMIT_STORAGE_URI` environment variable. The Render blueprint enables `TRUST_PROXY_HEADERS` only because the app is behind Render's proxy; do not enable that setting when exposing the app directly to the internet. Monitor abuse and apply hosting/network egress restrictions before opening the scanner to wider public use.
 
 Only scan websites you own or have permission to assess.
 
