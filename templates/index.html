@@ -160,7 +160,7 @@ const logStages=['Preparing request','Sending scan request to the server','Waiti
 const renderLog=function(message,state){
 const item=document.createElement('li');
 item.className=state==='active'?'active':'';
-const mark=document.createElement('span');mark.className='log-mark';mark.textContent=state==='active'?'…':'✓';
+const mark=document.createElement('span');mark.className='log-mark';mark.textContent=state==='active'?'…':(state==='failed'?'!':'✓');
 const label=document.createElement('span');label.textContent=message;
 const time=document.createElement('span');time.className='log-time';time.textContent=((Date.now()-scanStartedAt)/1000).toFixed(1)+'s';
 item.append(mark,label,time);scanLogList.append(item);
@@ -207,7 +207,7 @@ results.setAttribute('aria-busy','false');
 results.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
 }catch(error){
 if(logTimer){clearInterval(logTimer);logTimer=null;}
-renderLog('Scan stopped: '+(error.message||'request failed'),'done');scanLogState.textContent='Stopped';
+renderLog('Scan stopped: '+(error.message||'request failed'),'failed');scanLogState.textContent='Stopped';
 errorBox.textContent=error instanceof TypeError?'Could not reach the scanner. Check your connection and try again.':(error.message||'Something went wrong. Please try again.');
 errorBox.hidden=false;
 results.setAttribute('aria-busy','false');
