@@ -1,9 +1,8 @@
 """Casta Web Doctor's bounded website scanner.
 
-The scanner only permits public HTTP(S) destinations on ports 80 and 443,
-revalidates every redirect, limits redirects, and does not download page bodies.
-For production deployments, network-level egress controls are still recommended:
-DNS validation alone cannot completely eliminate DNS-rebinding races.
+Only public HTTP(S) destinations on ports 80 and 443 are allowed. Redirects are
+validated individually and limited. Production deployments also need network-level
+egress controls because DNS validation alone cannot eliminate DNS-rebinding races.
 """
 import ipaddress
 import socket
@@ -35,7 +34,6 @@ def normalize_url(raw_url):
     url = (raw_url or "").strip()
     if not url or len(url) > MAX_URL_LENGTH or any(c.isspace() for c in url):
         raise InvalidURLError("Enter a valid website address.")
-
     if "://" not in url:
         url = "https://" + url
 
@@ -53,8 +51,8 @@ def normalize_url(raw_url):
     if port is not None and port not in (80, 443):
         raise InvalidURLError("For safety, only standard HTTP/HTTPS ports are supported.")
 
-    # Fragments are client-side only and should not be sent to the server.
-    return urlunparse((parsed.scheme.lower(), parsed.netloc, parsed.path or "/", parsed.params, parsed.query, ""))
+    # Preserve the original empty path for compatibility with command-line use.
+    return urlunparse((parsed.scheme.lower(), parsed.netloc, parsed.path, parsed.params, parsed.query, ""))
 
 
 def _validate_public_destination(url):
@@ -67,12 +65,14 @@ def _validate_public_destination(url):
         raise InvalidURLError("Local and internal network addresses cannot be scanned.")
 
     try:
-        literal = ipaddress.ip_address(host)
-        addresses = [literal]
+        addresses = [ipaddress.ip_address(host)]
     except ValueError:
         try:
-            records = socket.getaddrinfo(host, parsed.port or (443 if parsed.scheme == "https" else 80), type=socket.SOCK_STREAM)
-        except (OSError, socket.gaierror) as exc:
+            records = socket.getaddrinfo(
+                host, parsed.port or (443 if parsed.scheme == "https" else 80),
+                type=socket.SOCK_STREAM,
+            )
+        except OSError as exc:
             raise InvalidURLError("The domain could not be resolved to a public address.") from exc
         addresses = []
         for record in records:
@@ -91,19 +91,19 @@ def _error(result, code, message):
     return result
 
 
+def _close_response(response):
+    """Close streamed responses; tolerate minimal response doubles in tests."""
+    close = getattr(response, "close", None)
+    if callable(close):
+        close()
+
+
 def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
     """Scan one public website, following a small, validated redirect chain."""
     result = {
-        "scan_type": "live",
-        "ok": False,
-        "url": None,
-        "status_code": None,
-        "response_time_ms": None,
-        "final_url": None,
-        "uses_https": None,
-        "redirect_count": 0,
-        "security_headers": [],
-        "error": None,
+        "scan_type": "live", "ok": False, "url": None, "status_code": None,
+        "response_time_ms": None, "final_url": None, "uses_https": None,
+        "redirect_count": 0, "security_headers": [], "error": None,
     }
 
     try:
@@ -116,47 +116,38 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
 
     try:
         for hop in range(MAX_REDIRECTS + 1):
-            # Validate each hop independently. Redirects are never followed
-            # automatically because each destination must pass our checks.
             current_url = _validate_public_destination(current_url)
             response = requests.get(
-                current_url,
-                timeout=timeout,
-                allow_redirects=False,
-                stream=True,
+                current_url, timeout=timeout, allow_redirects=False, stream=True,
                 headers={"User-Agent": USER_AGENT, "Accept": "text/html,*/*;q=0.5"},
             )
 
             if response.status_code in (301, 302, 303, 307, 308):
                 location = response.headers.get("Location")
-                response.close()
+                _close_response(response)
                 if not location:
                     return _error(result, "redirect_error", "The website returned a redirect without a destination.")
                 if hop >= MAX_REDIRECTS:
                     return _error(result, "too_many_redirects", "The website redirected too many times.")
                 try:
-                    current_url = urljoin(current_url, location)
-                    current_url = _validate_public_destination(current_url)
+                    current_url = _validate_public_destination(urljoin(current_url, location))
                 except InvalidURLError as error:
                     return _error(result, "unsafe_redirect", str(error))
                 result["redirect_count"] += 1
                 continue
 
-            elapsed_ms = round((time.perf_counter() - start) * 1000)
-            result["ok"] = True
-            result["status_code"] = response.status_code
-            result["response_time_ms"] = elapsed_ms
-            result["final_url"] = response.url
-            result["uses_https"] = urlparse(response.url).scheme.lower() == "https"
-            result["security_headers"] = [
-                {
-                    "name": name,
-                    "present": name in response.headers,
-                    "explanation": explanation,
-                }
-                for name, explanation in SECURITY_HEADERS.items()
-            ]
-            response.close()
+            result.update({
+                "ok": True,
+                "status_code": response.status_code,
+                "response_time_ms": round((time.perf_counter() - start) * 1000),
+                "final_url": response.url,
+                "uses_https": urlparse(response.url).scheme.lower() == "https",
+                "security_headers": [
+                    {"name": name, "present": name in response.headers, "explanation": explanation}
+                    for name, explanation in SECURITY_HEADERS.items()
+                ],
+            })
+            _close_response(response)
             return result
 
     except requests.exceptions.Timeout:
