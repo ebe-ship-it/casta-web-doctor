@@ -13,3 +13,5 @@ services:
         value: "true"
       - key: ENABLE_PUBLIC_SCANNING
         value: "false"
+      - key: EGRESS_RESTRICTIONS_VERIFIED
+        value: "false"
