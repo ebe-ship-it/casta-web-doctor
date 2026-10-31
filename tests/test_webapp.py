@@ -102,3 +102,15 @@ def test_api_returns_successful_scan(monkeypatch):
     assert response.get_json()["ok"] is True
     assert response.get_json()["response_time_ms"] == 42
     assert response.headers["Cache-Control"] == "no-store"
+
+
+
+def test_api_returns_service_unavailable_when_hosted_scanning_is_unprotected(monkeypatch):
+    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.delenv("SSRF_EGRESS_PROTECTED", raising=False)
+
+    response = app.test_client().post("/api/scan", json={"url": "example.com"})
+
+    assert response.status_code == 503
+    assert response.get_json()["ok"] is False
+    assert response.get_json()["error"]["code"] == "security_configuration"
