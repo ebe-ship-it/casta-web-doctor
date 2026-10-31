@@ -165,8 +165,6 @@ class _PinnedConnectMixin:
         extra_kw = {}
         if self.source_address:
             extra_kw["source_address"] = self.source_address
-        if self.socket_options:
-            extra_kw["socket_options"] = self.socket_options
         return socket.create_connection(
             (self._pinned_ip, self.port), self.timeout, **extra_kw
         )
@@ -334,6 +332,10 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
             _close_response(response)
             return result
 
+    except DNSResolutionError as error:
+        return _error(result, "dns_failed", str(error))
+    except InvalidURLError as error:
+        return _error(result, "invalid_url", str(error))
     except requests.exceptions.Timeout:
         return _error(result, "timeout", "The website took too long to respond.")
     except requests.exceptions.SSLError:
