@@ -157,11 +157,8 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS, on_progress=None):
     # Fail closed on hosted deployments until network-level egress restrictions
     # are explicitly configured. DNS validation before requests.get() alone is
     # vulnerable to DNS rebinding because the HTTP client may resolve again.
-    if (
-        os.environ.get("RENDER", "").lower() == "true"
-        and os.environ.get("SSRF_EGRESS_PROTECTED", "").lower() != "true"
-    ):
-        progress("blocked", "Scan blocked: outbound network protection is not configured")
+    if os.environ.get("RENDER", "").lower() == "true":
+        progress("blocked", "Scan blocked: this host has no verified outbound network isolation")
         return _error(
             result,
             "security_configuration",
