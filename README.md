@@ -23,7 +23,7 @@ Casta Web Doctor is a lightweight website-checking tool built with regular HTML,
 It checks a few practical things about a public website:
 
 - **HTTP status:** did the website respond, and what status did it return?
-- **Response time:** roughly how long did the request take?
+- **Response time:** how long it took to receive response headers, including redirects.
 - **HTTPS:** does the final connection use HTTPS?
 - **Redirects:** how many redirects happened, and where did the request end up?
 - **Security headers:** are five common browser security headers present?
