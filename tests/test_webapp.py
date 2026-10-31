@@ -1,3 +1,4 @@
+import webapp
 from webapp import app
 
 
@@ -50,3 +51,26 @@ def test_api_rejects_oversized_request():
     )
     assert response.status_code == 413
     assert response.get_json()["error"]["code"] == "request_too_large"
+
+
+def test_api_returns_successful_scan(monkeypatch):
+    fake_report = {
+        "scan_type": "live",
+        "ok": True,
+        "url": "https://example.com",
+        "status_code": 200,
+        "response_time_ms": 42,
+        "final_url": "https://example.com/",
+        "uses_https": True,
+        "redirect_count": 0,
+        "security_headers": [],
+        "error": None,
+    }
+    monkeypatch.setattr(webapp, "scan_website", lambda url: fake_report)
+
+    response = app.test_client().post("/api/scan", json={"url": "example.com"})
+
+    assert response.status_code == 200
+    assert response.get_json()["ok"] is True
+    assert response.get_json()["response_time_ms"] == 42
+    assert response.headers["Cache-Control"] == "no-store"
