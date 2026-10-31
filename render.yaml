@@ -11,3 +11,5 @@ services:
         value: 3.12.7
       - key: TRUST_PROXY_HEADERS
         value: "true"
+      - key: ENABLE_PUBLIC_SCANNING
+        value: "false"

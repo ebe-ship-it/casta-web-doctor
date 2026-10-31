@@ -18,7 +18,7 @@ If you're learning web development too, you're welcome here. You don't need to k
 
 ## What is Casta Web Doctor?
 
-Casta Web Doctor is a lightweight website-checking tool built with regular HTML, CSS and JavaScript on the frontend, and Python on the backend. It includes a simple web interface and a command-line scanner.
+Casta Web Doctor is a lightweight website-checking tool built with HTML, CSS and JavaScript on the frontend, and Python on the backend. It includes a simple web interface and a command-line scanner.
 
 It checks a few practical things about a public website:
 
@@ -45,45 +45,24 @@ Please remember that this is a **basic diagnostic tool, not a full security audi
 - Flask-Limiter
 - Pytest and GitHub Actions
 
-The frontend uses normal web files rather than a site builder or a large frontend framework. I wanted to understand and work with the code directly.
-
 ## Run it on your own device
 
 You'll need Python 3.10 or newer and pip.
 
-### 1. Get the code
-
 ```bash
 git clone https://github.com/ebe-ship-it/casta-web-doctor.git
 cd casta-web-doctor
-```
-
-### 2. Create a virtual environment
-
-```bash
 python -m venv .venv
 ```
 
-Activate it:
-
-- **Linux/macOS/Termux:** `source .venv/bin/activate`
-- **Windows PowerShell:** `.venv\\Scripts\\Activate.ps1`
-
-### 3. Install the dependencies
+Activate the virtual environment with `source .venv/bin/activate` on Linux/macOS/Termux, or `.venv\\Scripts\\Activate.ps1` in Windows PowerShell. Then install dependencies and run locally:
 
 ```bash
 python -m pip install -r requirements.txt
-```
-
-### 4. Start the app
-
-```bash
 python webapp.py
 ```
 
-Then open **http://127.0.0.1:5000** in your browser.
-
-For production, use a WSGI server rather than Flask's development server:
+Open `http://127.0.0.1:5000` in your browser. For production, use a WSGI server:
 
 ```bash
 gunicorn webapp:app --workers 1 --threads 8 --timeout 30
@@ -99,7 +78,7 @@ The app accepts a JSON POST request at `/api/scan`:
 }
 ```
 
-The response contains the scan results in JSON. The `/health` endpoint can be used to check whether the app is running.
+**Safety default:** public scanning is disabled unless `ENABLE_PUBLIC_SCANNING=true` is explicitly configured. Keep it disabled until outbound network isolation, SSRF protections, DNS-rebinding controls, secrets, and production logging have been verified. The `/health` endpoint checks whether the web service is running.
 
 ## Run the tests
 
@@ -111,11 +90,17 @@ GitHub Actions runs the test suite when code is pushed to the main branch or a p
 
 ## Security and responsible use
 
-The scanner accepts HTTP and HTTPS on their standard ports, checks destinations before requesting them, and validates redirects. It also includes request limits and basic security headers for the app itself.
+Application-level destination checks and redirect validation do not fully prevent DNS-rebinding SSRF. Public scanning requires verified network-level rules that block private networks, link-local addresses, metadata endpoints, and internal services. The current rate limiter uses in-memory storage; limits are process-local and reset on restart. Multi-worker or multi-instance deployments should use shared storage such as Redis.
 
-There are still limitations. DNS can change between validation and a request, so application-level checks alone cannot fully prevent DNS-rebinding SSRF. A public deployment needs network-level rules that block access to private networks and internal services. The current rate limiter uses in-memory storage, which is intended for a small beta; a larger multi-instance deployment should use shared storage such as Redis.
+Only scan websites you own or have permission to assess. Do not use the project to harass a website or overload someone else's service.
 
-Only scan websites you own or have permission to assess. Please don't use this project to harass a website or overload someone else's service.
+## Policies
+
+- [Privacy notice](/privacy)
+- [Acceptable use policy](/acceptable-use)
+- [Security policy](SECURITY.md)
+
+The privacy notice requires the operator to verify the actual hosting logs, retention settings, and data handling, and to add a real support contact before promoting the service broadly.
 
 ## Deploying on Render
 
@@ -123,23 +108,18 @@ The repository includes a `render.yaml` configuration for a Render web service.
 
 1. Open [Render](https://render.com/).
 2. Create a new Blueprint and connect this repository.
-3. Review the configuration and start the deployment.
-4. When deployment finishes, test the public website and its `/health` endpoint.
+3. Review the configuration and deploy the service.
+4. Test the public website, `/health`, `/privacy`, and `/acceptable-use`.
+5. Complete every release-blocking item in [the production security checklist](docs/PRODUCTION_SECURITY_CHECKLIST.md), especially outbound network isolation against SSRF and DNS rebinding.
 
-A deployment configuration doesn't mean the app is already live. Hosting plans and platform settings can change, so review the current options in your Render account.
+The initial configuration keeps scanning disabled. Do not enable it until the relevant protections are verified in the actual hosting environment. A deployment configuration does not mean the app is already live.
 
 ## Want to help?
 
-If you're interested in the project:
-
 - Try it and report bugs.
-- Suggest a feature or a design improvement.
-- Read the code and tell me what I could do better.
+- Suggest a feature or design improvement.
+- Read the code and offer constructive feedback.
 - Fork the repository and experiment with your own version.
-
-I'm learning as I go, so respectful feedback is genuinely welcome. If this project helps you, or inspires you to build something of your own, then that's already a win.
-
-Thanks for checking out something I made. This is one step in a much longer journey, and I'm excited to keep learning and building.
 
 **Made by Casta 🇹🇿**
 
