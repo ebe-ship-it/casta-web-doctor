@@ -67,7 +67,7 @@ input::placeholder{color:#98a098}
 .results-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:22px;border-bottom:1px solid var(--line)}
 .results h2{font-family:Georgia,"Times New Roman",serif;font-size:30px;font-weight:500;letter-spacing:-.04em;margin:0}
 .result-url{font-size:12px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}
-.result-badge{font-size:11px;border-radius:99px;padding:7px 11px;background:var(--green-soft);color:var(--green);font-weight:800;white-space:nowrap}
+.result-badge{font-size:11px;border-radius:99px;padding:7px 11px;background:var(--green-soft);color:var(--green);font-weight:800;white-space:nowrap}.result-badge.warn{background:var(--orange-soft);color:#995033}
 .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:22px 0}
 .metric{border:1px solid var(--line);border-radius:13px;padding:15px;min-width:0}
 .metric-label{font-size:11px;color:var(--muted)}
@@ -160,7 +160,7 @@ return '<div class="check"><div class="check-icon '+(present?'pass':'missing')+'
 }).join('');
 const secure=Boolean(data.uses_https);
 const statusText=isGoodStatus(data.status_code)?'Server responded':'Review response';
-results.innerHTML='<div class="results-head"><div><div class="kicker">Your scan report</div><h2>Here is what we found.</h2><div class="result-url">Requested address: '+escapeHtml(data.url)+'</div></div><div class="result-badge">'+escapeHtml(statusText)+'</div></div>'+
+results.innerHTML='<div class="results-head"><div><div class="kicker">Your scan report</div><h2>Here is what we found.</h2><div class="result-url">Requested address: '+escapeHtml(data.url)+'</div></div><div class="'+(isGoodStatus(data.status_code)?'result-badge':'result-badge warn')+'">'+escapeHtml(statusText)+'</div></div>'+
 '<div class="metrics"><div class="metric"><div class="metric-label">HTTP status</div><div class="metric-value">'+escapeHtml(data.status_code)+'</div><div class="metric-note">'+escapeHtml(statusText)+'</div></div>'+
 '<div class="metric"><div class="metric-label">Response time</div><div class="metric-value">'+escapeHtml(data.response_time_ms)+'<span style="font-size:12px;letter-spacing:0"> ms</span></div><div class="metric-note">Total time for redirects and response</div></div>'+
 '<div class="metric"><div class="metric-label">HTTPS</div><div class="metric-value">'+(secure?'Yes':'No')+'</div><div class="metric-note">'+(secure?'Final connection is encrypted':'Final connection is not HTTPS')+'</div></div>'+
