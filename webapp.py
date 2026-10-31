@@ -61,9 +61,50 @@ def add_security_headers(response):
     return response
 
 
+def public_site_url():
+    """Return the configured canonical public origin, without a trailing slash."""
+    configured = os.environ.get("PUBLIC_SITE_URL", "").strip().rstrip("/")
+    if configured.startswith("https://") or configured.startswith("http://"):
+        return configured
+    return request.url_root.rstrip("/")
+
+
+@app.context_processor
+def inject_site_url():
+    return {"site_url": public_site_url()}
+
+
 @app.get("/")
 def index():
     return render_template("index.html")
+
+
+@app.get("/robots.txt")
+def robots_txt():
+    """Let crawlers index public pages while excluding API and health endpoints."""
+    body = (
+        "User-agent: *\\n"
+        "Allow: /\\n"
+        "Disallow: /api/\\n"
+        "Disallow: /health\\n"
+        f"Sitemap: {public_site_url()}/sitemap.xml\\n"
+    )
+    return Response(body, mimetype="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml():
+    """Publish a small sitemap containing only the public homepage."""
+    from xml.sax.saxutils import escape
+
+    homepage = escape(public_site_url() + "/")
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"<url><loc>{homepage}</loc></url>"
+        "</urlset>"
+    )
+    return Response(body, mimetype="application/xml")
 
 
 @app.post("/api/scan")
