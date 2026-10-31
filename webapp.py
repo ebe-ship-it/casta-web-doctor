@@ -114,6 +114,8 @@ def api_scan():
         status = (
             400
             if result["error"]["code"] in ("invalid_url", "unsafe_redirect")
+            else 503
+            if result["error"]["code"] == "security_configuration"
             else 502
         )
         return jsonify(result), status
