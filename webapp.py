@@ -5,12 +5,18 @@ from flask import Flask, jsonify, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from scanner import scan_website
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024
 app.config["JSON_SORT_KEYS"] = False
+
+# Only trust forwarded client/protocol headers when running behind the configured
+# hosting proxy. Never enable this when the app is directly exposed to clients.
+if os.environ.get("TRUST_PROXY_HEADERS", "").lower() == "true":
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 # Set RATELIMIT_STORAGE_URI to a shared Redis URL in a multi-worker production
 # deployment. The in-memory fallback is suitable only for a small beta.
