@@ -196,8 +196,6 @@ const scanLog=document.getElementById('scan-log');
 const scanLogList=document.getElementById('scan-log-list');
 const scanLogState=document.getElementById('scan-log-state');
 let scanStartedAt=0;
-let logTimer=null;
-const logStages=['Preparing request','Sending scan request to the server','Waiting for URL validation and DNS checks','Waiting for the target server response','Waiting for the report'];
 const renderLog=function(message,state){
 const item=document.createElement('li');
 item.className=state==='active'?'active':'';
@@ -205,7 +203,7 @@ const mark=document.createElement('span');mark.className='log-mark';mark.textCon
 const label=document.createElement('span');label.textContent=message;
 const time=document.createElement('span');time.className='log-time';time.textContent=((Date.now()-scanStartedAt)/1000).toFixed(1)+'s';
 item.append(mark,label,time);scanLogList.append(item);
-scanLogState.textContent=state==='active'?'In progress':'Updated';
+scanLogState.textContent=state==='active'?'In progress':(state==='failed'?'Stopped':'Updated');
 };
 const escapeHtml=function(value){return String(value==null?'':value).replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
 const isGoodStatus=function(status){return Number(status)>=200&&Number(status)<400;};
@@ -215,16 +213,36 @@ errorBox.hidden=true;
 results.hidden=true;
 results.setAttribute('aria-busy','true');
 scanLog.hidden=false;scanLogList.replaceChildren();scanStartedAt=Date.now();
-renderLog('Scan started','active');
-let stageIndex=0;if(logTimer)clearInterval(logTimer);
-logTimer=setInterval(function(){if(stageIndex<logStages.length){renderLog(logStages[stageIndex++],'active');}else{clearInterval(logTimer);logTimer=null;}},900);
 button.disabled=true;
 buttonLabel.textContent='Scanning…';
 try{
-const response=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({url:input.value.trim()}),credentials:'same-origin'});
-let data;
-try{data=await response.json();}catch(parseError){throw new Error('The scanner returned an unreadable response. Please try again.');}
-if(!response.ok||!data||!data.ok){const message=data&&data.error&&data.error.message;throw new Error(message||'The scan could not be completed. Please try again.');}
+const response=await fetch('/api/scan/stream',{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({url:input.value.trim()}),credentials:'same-origin'});
+if(!response.ok){
+let failure;try{failure=await response.json();}catch(ignore){}
+throw new Error(failure&&failure.error&&failure.error.message||'The scan could not be started.');
+}
+if(!response.body)throw new Error('Live progress is not supported by this browser.');
+const reader=response.body.getReader();
+const decoder=new TextDecoder();
+let buffer='';
+let data=null;
+while(true){
+const chunk=await reader.read();
+if(chunk.done)break;
+buffer+=decoder.decode(chunk.value,{stream:true});
+let boundary;
+while((boundary=buffer.indexOf('\\n\\n'))!==-1){
+const frame=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2);
+const line=frame.split('\\n').find(function(part){return part.indexOf('data:')===0;});
+if(!line)continue;
+let event;try{event=JSON.parse(line.slice(5).trim());}catch(ignore){continue;}
+if(event.type==='progress')renderLog(event.message,event.stage==='completed'?'done':(event.stage==='blocked'?'failed':'active'));
+if(event.type==='result')data=event.result;
+}
+}
+if(!data)throw new Error('The scan stream ended before a report was received.');
+if(!data.ok){renderLog(data.error&&data.error.message||'Scan failed','failed');scanLogState.textContent='Stopped';throw new Error(data.error&&data.error.message||'The scan could not be completed.');}
+
 const headers=Array.isArray(data.security_headers)?data.security_headers:[];
 const rows=headers.map(function(header){
 const present=Boolean(header.present);
@@ -241,19 +259,16 @@ results.innerHTML='<div class="results-head"><div><div class="kicker">Your scan 
 '<div class="section-heading"><h3>Security headers</h3><span>'+headers.filter(function(item){return item.present;}).length+' of '+headers.length+' detected</span></div>'+
 (rows||'<p class="result-url">No security header details were returned.</p>')+
 '<p class="report-note">Context matters: a missing header is not automatically a vulnerability. These results are a first-pass check, not a full audit or a guarantee that a site is safe.</p>';
-if(logTimer){clearInterval(logTimer);logTimer=null;}
 renderLog('Scan completed and report received','done');scanLogState.textContent='Complete';
 results.hidden=false;
 results.setAttribute('aria-busy','false');
 results.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
 }catch(error){
-if(logTimer){clearInterval(logTimer);logTimer=null;}
 renderLog('Scan stopped: '+(error.message||'request failed'),'failed');scanLogState.textContent='Stopped';
 errorBox.textContent=error instanceof TypeError?'Could not reach the scanner. Check your connection and try again.':(error.message||'Something went wrong. Please try again.');
 errorBox.hidden=false;
 results.setAttribute('aria-busy','false');
 }finally{
-if(logTimer){clearInterval(logTimer);logTimer=null;}
 button.disabled=false;
 buttonLabel.textContent='Check website';
 }
