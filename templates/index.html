@@ -49,6 +49,14 @@ input::placeholder{color:#98a098}
 .submit:disabled{opacity:.65;cursor:wait;transform:none}
 .form-hint{font-size:11px;line-height:1.55;color:var(--muted);margin:13px 0 0}
 .error{margin-top:14px;padding:12px 13px;border:1px solid #e7c3b7;background:#fff1ec;color:#8a3d28;border-radius:10px;font-size:13px}
+.scan-log{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:#f7f7f2;padding:13px 14px}
+.scan-log-head{display:flex;justify-content:space-between;gap:12px;font-size:11px;font-weight:800}
+.scan-log-state{color:var(--green)}
+.scan-log-list{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}
+.scan-log-list li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.log-mark{font-weight:900;color:var(--green)}
+.log-time{font-variant-numeric:tabular-nums;color:#8a9189;font-size:10px;white-space:nowrap}
+.scan-log-list li.active .log-mark{color:var(--orange)}
 .preview{margin-top:20px;border:1px solid var(--line);border-radius:15px;padding:15px;background:#f7f7f2}
 .preview-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800}
 .preview-label{color:var(--muted);font-weight:600}
@@ -117,6 +125,10 @@ input::placeholder{color:#98a098}
 <button id="scan-btn" class="submit" type="submit"><span id="button-label">Check website</span><span aria-hidden="true">↗</span></button>
 <p class="form-hint" id="url-hint">We check public pages only, using standard HTTP/HTTPS ports. Scan only websites you own or have permission to assess.</p>
 <div id="error" class="error" role="alert" hidden></div>
+<div id="scan-log" class="scan-log" aria-live="polite" hidden>
+<div class="scan-log-head"><span>SCAN ACTIVITY</span><span id="scan-log-state" class="scan-log-state">Ready</span></div>
+<ol id="scan-log-list" class="scan-log-list"></ol>
+</div>
 </form>
 <div class="preview" aria-hidden="true"><div class="preview-head"><span>WHAT WE LOOK AT</span><span class="preview-label">01 — 05</span></div><div class="preview-lines"><div class="preview-line"></div><div class="preview-line"></div><div class="preview-line"></div></div><div class="preview-bottom"><span class="mini-chip">Availability</span><span class="mini-chip">HTTPS</span><span class="mini-chip orange">Headers</span></div></div>
 </section>
@@ -139,6 +151,21 @@ const button=document.getElementById('scan-btn');
 const buttonLabel=document.getElementById('button-label');
 const errorBox=document.getElementById('error');
 const results=document.getElementById('results');
+const scanLog=document.getElementById('scan-log');
+const scanLogList=document.getElementById('scan-log-list');
+const scanLogState=document.getElementById('scan-log-state');
+let scanStartedAt=0;
+let logTimer=null;
+const logStages=['Preparing request','Sending scan request to the server','Waiting for URL validation and DNS checks','Waiting for the target server response','Waiting for the report'];
+const renderLog=function(message,state){
+const item=document.createElement('li');
+item.className=state==='active'?'active':'';
+const mark=document.createElement('span');mark.className='log-mark';mark.textContent=state==='active'?'…':'✓';
+const label=document.createElement('span');label.textContent=message;
+const time=document.createElement('span');time.className='log-time';time.textContent=((Date.now()-scanStartedAt)/1000).toFixed(1)+'s';
+item.append(mark,label,time);scanLogList.append(item);
+scanLogState.textContent=state==='active'?'In progress':'Updated';
+};
 const escapeHtml=function(value){return String(value==null?'':value).replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
 const isGoodStatus=function(status){return Number(status)>=200&&Number(status)<400;};
 form.addEventListener('submit',async function(event){
@@ -146,8 +173,12 @@ event.preventDefault();
 errorBox.hidden=true;
 results.hidden=true;
 results.setAttribute('aria-busy','true');
+scanLog.hidden=false;scanLogList.replaceChildren();scanStartedAt=Date.now();
+renderLog('Scan started','active');
+let stageIndex=0;if(logTimer)clearInterval(logTimer);
+logTimer=setInterval(function(){if(stageIndex<logStages.length){renderLog(logStages[stageIndex++],'active');}else{clearInterval(logTimer);logTimer=null;}},900);
 button.disabled=true;
-buttonLabel.textContent='Checking…';
+buttonLabel.textContent='Scanning…';
 try{
 const response=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({url:input.value.trim()}),credentials:'same-origin'});
 let data;
@@ -169,14 +200,19 @@ results.innerHTML='<div class="results-head"><div><div class="kicker">Your scan 
 '<div class="section-heading"><h3>Security headers</h3><span>'+headers.filter(function(item){return item.present;}).length+' of '+headers.length+' detected</span></div>'+
 (rows||'<p class="result-url">No security header details were returned.</p>')+
 '<p class="report-note">Context matters: a missing header is not automatically a vulnerability. These results are a first-pass check, not a full audit or a guarantee that a site is safe.</p>';
+if(logTimer){clearInterval(logTimer);logTimer=null;}
+renderLog('Scan completed and report received','done');scanLogState.textContent='Complete';
 results.hidden=false;
 results.setAttribute('aria-busy','false');
 results.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
 }catch(error){
+if(logTimer){clearInterval(logTimer);logTimer=null;}
+renderLog('Scan stopped: '+(error.message||'request failed'),'done');scanLogState.textContent='Stopped';
 errorBox.textContent=error instanceof TypeError?'Could not reach the scanner. Check your connection and try again.':(error.message||'Something went wrong. Please try again.');
 errorBox.hidden=false;
 results.setAttribute('aria-busy','false');
 }finally{
+if(logTimer){clearInterval(logTimer);logTimer=null;}
 button.disabled=false;
 buttonLabel.textContent='Check website';
 }
