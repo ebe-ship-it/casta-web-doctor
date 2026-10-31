@@ -47,7 +47,7 @@ def normalize_url(raw_url):
     if parsed.scheme.lower() not in ("http", "https"):
         raise InvalidURLError("Only HTTP and HTTPS addresses are supported.")
     if not hostname or parsed.username is not None or parsed.password is not None:
-        raise InvalidURLError("That website address is not allowed.")
+        raise InvalidURLError("Invalid website address: missing hostname or embedded credentials are not allowed.")
     if port is not None and port not in (80, 443):
         raise InvalidURLError("For safety, only standard HTTP/HTTPS ports are supported.")
 
