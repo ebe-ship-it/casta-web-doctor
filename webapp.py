@@ -80,8 +80,8 @@ def api_scan():
 
     # Fail closed: public scanning stays disabled until network-level SSRF
     # protections, DNS rebinding controls, and production settings are verified.
-    if os.environ.get("ENABLE_PUBLIC_SCANNING", "false").lower() != "true":
-        return jsonify({"ok": False, "error": {"code": "scanning_disabled", "message": "Scanning is temporarily disabled while production security protections are being verified."}}), 503
+    if os.environ.get("ENABLE_PUBLIC_SCANNING", "false").lower() != "true" or os.environ.get("EGRESS_RESTRICTIONS_VERIFIED", "false").lower() != "true":
+        return jsonify({"ok": False, "error": {"code": "scanning_disabled", "message": "Scanning is temporarily disabled until DNS-pinning and outbound network restrictions are verified."}}), 503
 
     result = scan_website(url)
     if not result["ok"]:
