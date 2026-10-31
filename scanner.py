@@ -10,6 +10,9 @@ import time
 from urllib.parse import urljoin, urlparse, urlunparse
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.connection import HTTPConnection, HTTPSConnection
+from urllib3.connectionpool import HTTPConnectionPool, HTTPSConnectionPool
 
 USER_AGENT = "CastaWebDoctor/1.1"
 TIMEOUT_SECONDS = 8
@@ -117,6 +120,98 @@ def _validate_public_destination(url):
     return normalized
 
 
+
+def _resolve_public_addresses(url):
+    """Resolve a URL host once and return only validated public IP addresses."""
+    parsed = urlparse(normalize_url(url))
+    host = parsed.hostname.rstrip(".").lower()
+    if host == "localhost" or host.endswith(".localhost") or host.endswith(".local"):
+        raise InvalidURLError("Local and internal network addresses cannot be scanned.")
+    try:
+        addresses = [ipaddress.ip_address(host)]
+    except ValueError:
+        try:
+            records = socket.getaddrinfo(
+                host, 443 if parsed.scheme == "https" else 80,
+                type=socket.SOCK_STREAM,
+            )
+        except (OSError, UnicodeError) as exc:
+            raise DNSResolutionError(
+                "The domain could not be resolved to a public address."
+            ) from exc
+        addresses = []
+        for record in records:
+            try:
+                addresses.append(ipaddress.ip_address(record[4][0].split("%", 1)[0]))
+            except (ValueError, IndexError, TypeError):
+                continue
+    # Reject mixed public/private answers instead of picking a safe answer
+    # from a potentially malicious DNS response.
+    if not addresses or any(not address.is_global for address in addresses):
+        raise InvalidURLError("Private or non-public network destinations cannot be scanned.")
+    return parsed, addresses
+
+
+class _PinnedConnectMixin:
+    """Connect to a validated IP while retaining the URL hostname for TLS SNI."""
+
+    def __init__(self, *args, pinned_ip=None, **kwargs):
+        self._pinned_ip = str(pinned_ip) if pinned_ip is not None else None
+        super().__init__(*args, **kwargs)
+
+    def _new_conn(self):
+        if self._pinned_ip is None:
+            raise OSError("A pinned destination IP is required.")
+        extra_kw = {}
+        if self.source_address:
+            extra_kw["source_address"] = self.source_address
+        return socket.create_connection(
+            (self._pinned_ip, self.port), self.timeout, **extra_kw
+        )
+
+
+class _PinnedHTTPConnection(_PinnedConnectMixin, HTTPConnection):
+    pass
+
+
+class _PinnedHTTPSConnection(_PinnedConnectMixin, HTTPSConnection):
+    pass
+
+
+class _PinnedHTTPConnectionPool(HTTPConnectionPool):
+    ConnectionCls = _PinnedHTTPConnection
+
+
+class _PinnedHTTPSConnectionPool(HTTPSConnectionPool):
+    ConnectionCls = _PinnedHTTPSConnection
+
+
+class _DNSPinningAdapter(HTTPAdapter):
+    """Re-resolve and validate each request, then pin its socket to that IP."""
+
+    def get_connection(self, url, proxies=None):
+        if proxies:
+            raise InvalidURLError("Proxy routing is not allowed for public scans.")
+        parsed, addresses = _resolve_public_addresses(url)
+        # All DNS answers were checked above. Pick one and pin the socket to it.
+        pinned_ip = str(addresses[0])
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        pool_cls = _PinnedHTTPSConnectionPool if parsed.scheme == "https" else _PinnedHTTPConnectionPool
+        return pool_cls(
+            host=parsed.hostname,
+            port=port,
+            pinned_ip=pinned_ip,
+            maxsize=1,
+            block=True,
+        )
+
+
+_http_session = requests.Session()
+_http_session.trust_env = False
+_http_session.mount("http://", _DNSPinningAdapter())
+_http_session.mount("https://", _DNSPinningAdapter())
+
+
 def _error(result, code, message):
     result["error"] = {"code": code, "message": message}
     return result
@@ -168,14 +263,11 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
             # total budget. DNS resolution itself is platform-managed, so a
             # production deployment should also use bounded DNS/network egress.
             hop_timeout = min(timeout, remaining / 2)
-            response = requests.get(
+            response = _http_session.get(
                 current_url,
                 timeout=(hop_timeout, hop_timeout),
                 allow_redirects=False,
                 stream=True,
-                # Empty scheme-specific proxy entries prevent Requests from
-                # silently routing the scan through environment proxy settings.
-                proxies={"http": "", "https": ""},
                 headers={
                     "User-Agent": USER_AGENT,
                     "Accept": "text/html,*/*;q=0.5",
@@ -240,6 +332,10 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
             _close_response(response)
             return result
 
+    except DNSResolutionError as error:
+        return _error(result, "dns_failed", str(error))
+    except InvalidURLError as error:
+        return _error(result, "invalid_url", str(error))
     except requests.exceptions.Timeout:
         return _error(result, "timeout", "The website took too long to respond.")
     except requests.exceptions.SSLError:

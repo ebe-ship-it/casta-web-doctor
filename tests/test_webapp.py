@@ -49,6 +49,7 @@ def test_api_rejects_json_null():
 
 def test_api_rejects_invalid_url(monkeypatch):
     monkeypatch.setenv("ENABLE_PUBLIC_SCANNING", "true")
+    monkeypatch.setenv("EGRESS_RESTRICTIONS_VERIFIED", "true")
     response = app.test_client().post("/api/scan", json={"url": "ftp://example.com"})
     assert response.status_code == 400
     assert response.get_json()["ok"] is False
@@ -108,3 +109,13 @@ def test_homepage_links_to_policies():
     response = app.test_client().get("/")
     assert b'href="/privacy"' in response.data
     assert b'href="/acceptable-use"' in response.data
+
+
+
+def test_scanning_stays_disabled_without_verified_egress(monkeypatch):
+    monkeypatch.setenv("ENABLE_PUBLIC_SCANNING", "true")
+    monkeypatch.delenv("EGRESS_RESTRICTIONS_VERIFIED", raising=False)
+    monkeypatch.setattr(webapp, "scan_website", lambda _url: pytest.fail("scanner must not run before egress verification"))
+    response = app.test_client().post("/api/scan", json={"url": "https://example.com"})
+    assert response.status_code == 503
+    assert response.get_json()["error"]["code"] == "scanning_disabled"

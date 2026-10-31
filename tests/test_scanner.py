@@ -1,4 +1,5 @@
 import socket
+import ipaddress
 
 import pytest
 import requests
@@ -68,7 +69,7 @@ def test_normalize_removes_fragment():
 
 
 def test_scan_success(monkeypatch):
-    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse())
+    monkeypatch.setattr(scanner._http_session, "get", lambda url, **kw: FakeResponse())
     result = scan_website("example.com")
     assert result["ok"] is True
     assert result["status_code"] == 200
@@ -101,7 +102,7 @@ def test_scan_follows_safe_redirect_and_closes_responses(monkeypatch):
         calls.append(url)
         return responses[len(calls) - 1]
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
     result = scan_website("http://example.com")
 
     assert result["ok"] is True
@@ -117,7 +118,7 @@ def test_scan_rejects_unsafe_redirect(monkeypatch):
         status_code=302,
         headers={"Location": "http://127.0.0.1/admin"},
     )
-    monkeypatch.setattr(requests, "get", lambda url, **kw: response)
+    monkeypatch.setattr(scanner._http_session, "get", lambda url, **kw: response)
 
     result = scan_website("http://example.com")
 
@@ -130,7 +131,7 @@ def test_scan_handles_timeout(monkeypatch):
     def fake_get(url, **kw):
         raise requests.exceptions.Timeout()
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
     result = scan_website("example.com")
     assert result["ok"] is False
     assert result["error"]["code"] == "timeout"
@@ -152,7 +153,7 @@ def test_invalid_url_does_not_make_request(monkeypatch):
     def fake_get(url, **kw):
         raise AssertionError("Request should not happen")
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
     result = scan_website("https:///")
     assert result["error"]["code"] == "invalid_url"
 
@@ -164,7 +165,7 @@ def test_scan_rejects_redirect_without_location(monkeypatch):
         status_code=302,
         headers={},
     )
-    monkeypatch.setattr(requests, "get", lambda url, **kw: response)
+    monkeypatch.setattr(scanner._http_session, "get", lambda url, **kw: response)
 
     result = scan_website("example.com")
 
@@ -188,7 +189,7 @@ def test_scan_stops_after_redirect_limit(monkeypatch):
         calls.append(url)
         return responses[len(calls) - 1]
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
 
     result = scan_website("example.com")
 
@@ -205,7 +206,7 @@ def test_scan_uses_bounded_connect_and_read_timeouts(monkeypatch):
         captured.update(kwargs)
         return FakeResponse()
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
 
     result = scan_website("example.com")
 
@@ -213,3 +214,33 @@ def test_scan_uses_bounded_connect_and_read_timeouts(monkeypatch):
     connect_timeout, read_timeout = captured["timeout"]
     assert 0 < connect_timeout <= 8
     assert 0 < read_timeout <= 8
+
+
+
+def test_dns_pinning_adapter_keeps_hostname_but_pins_ip(monkeypatch):
+    adapter = scanner._DNSPinningAdapter()
+    monkeypatch.setattr(
+        scanner, "_resolve_public_addresses",
+        lambda url: (scanner.urlparse(url), [ipaddress.ip_address("93.184.216.34")]),
+    )
+    pool = adapter.get_connection("https://example.com/path")
+    assert pool.host == "example.com"
+    assert pool.port == 443
+    assert pool.conn_kw["pinned_ip"] == "93.184.216.34"
+
+
+def test_dns_pinning_rejects_proxy_routing():
+    adapter = scanner._DNSPinningAdapter()
+    with pytest.raises(InvalidURLError, match="Proxy routing"):
+        adapter.get_connection("https://example.com", proxies={"https": "http://proxy.invalid"})
+
+
+def test_dns_resolution_rejects_mixed_public_and_private_answers(monkeypatch):
+    def mixed_dns(host, port, type=socket.SOCK_STREAM):
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("93.184.216.34", port)),
+            (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("127.0.0.1", port)),
+        ]
+    monkeypatch.setattr(scanner.socket, "getaddrinfo", mixed_dns)
+    with pytest.raises(InvalidURLError, match="Private or non-public"):
+        scanner._resolve_public_addresses("https://example.com")
