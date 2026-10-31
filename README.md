@@ -1,20 +1,19 @@
-# Casta Web Doctor 🩺
+# Casta Web Doctor
 
-Casta Web Doctor is a small Python website diagnostics tool with both a command-line scanner and a mobile-friendly web interface.
+A lightweight website diagnostics tool with a standalone HTML/CSS/JavaScript interface, a Python scanner, and a command-line mode. The interface uses a restrained editorial visual style rather than a component framework or generated site builder.
 
-## Features
+## What it checks
 
-- HTTP status and response-time checks.
-- HTTPS detection and redirect counting.
-- Checks for common security headers.
-- Mobile-friendly browser interface.
-- JSON endpoint for programmatic scans.
-- Basic SSRF protections: only HTTP(S), standard ports, public destinations, and a small manually validated redirect chain.
-- Automated tests and GitHub Actions.
+- HTTP status and approximate response time.
+- HTTPS on the final connection.
+- Redirect count and final URL.
+- Five common security headers, with plain-language explanations.
+- A mobile-friendly results report and JSON API.
+- Input validation, a bounded redirect chain, public-IP checks, response closing, basic response security headers, and API rate limits.
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.10 or newer
 - pip
 
 ## Install
@@ -30,27 +29,35 @@ Activate the virtual environment:
 - Linux/macOS/Termux: `source .venv/bin/activate`
 - Windows PowerShell: `.venv\\Scripts\\Activate.ps1`
 
-Install packages:
+Install dependencies:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-## Start the web app
+## Run locally
 
 ```bash
 python webapp.py
 ```
 
-Open `http://127.0.0.1:5000` in your browser. The app listens on localhost by default. Set `PORT` to change the port.
+Open `http://127.0.0.1:5000`. The development server binds to localhost by default. Set `PORT` to change the port.
 
-The JSON API accepts a POST request to `/api/scan` with `Content-Type: application/json` and a body such as:
+For production, run the WSGI server rather than Flask's development server:
+
+```bash
+gunicorn webapp:app --workers 2 --threads 4 --timeout 30
+```
+
+## API
+
+Send a JSON POST request to `/api/scan`:
 
 ```json
 {"url": "https://example.com"}
 ```
 
-A simple health endpoint is available at `/health`.
+The API returns a structured scan report. Invalid input returns a 4xx response; scan failures return a 502 response. `/health` is a simple health-check endpoint.
 
 ## Command-line scanner
 
@@ -59,35 +66,35 @@ python main.py https://example.com
 python main.py example.com
 ```
 
-## Run tests
+## Tests
 
 ```bash
 python -m pytest -v
 ```
 
-## Security and deployment notes
+GitHub Actions runs the test suite on pushes to `main` and pull requests.
 
-This project is an early-stage diagnostic tool, not a full penetration test or a guarantee that a website is secure. Missing headers are not automatically vulnerabilities.
+## Security limitations
 
-The scanner rejects loopback, private, link-local, reserved, and other non-public IP addresses, restricts destinations to HTTP(S) ports 80 and 443, and validates redirects individually. DNS can change between validation and connection, so production hosting should also apply network-level outbound firewall rules that block private/internal address ranges. Add request rate limits and abuse monitoring before exposing the scanner publicly. Do not deploy with Flask's development server; use a production WSGI server and a suitable reverse proxy.
+This is a first-pass diagnostic tool, not a penetration test and not a guarantee that a site is secure. Missing headers are not automatically vulnerabilities.
+
+The scanner only accepts HTTP(S) and each scheme's standard port, rejects non-public IP addresses, and manually validates every redirect. DNS can change between validation and the actual HTTP connection, so DNS checks alone cannot eliminate DNS-rebinding SSRF. A production deployment must enforce outbound network rules that block loopback, private, link-local, metadata-service, and other internal destinations.
+
+The API has per-IP limits of 20 requests per minute and 300 per day. The default limiter store is in-memory, which is suitable only for a small beta and is not shared across multiple workers or instances. For a public multi-worker deployment, configure a shared Redis-compatible store with the `RATELIMIT_STORAGE_URI` environment variable. Monitor abuse and apply hosting/network egress restrictions before opening the scanner to wider public use.
 
 Only scan websites you own or have permission to assess.
 
-## Project status
+## Deploy on Render
 
-Early development. The web UI and basic checks are implemented; additional SEO and link checks can be added after the security and test suite are reviewed.
+A `render.yaml` blueprint configures a Python web service, Gunicorn, and the `/health` health check.
+
+1. Open [Render](https://render.com/) and choose **New → Blueprint**.
+2. Connect `ebe-ship-it/casta-web-doctor` and select the `main` branch.
+3. Review the service settings and create the service.
+4. When deployment finishes, open the public `onrender.com` address and test `/health` and the scan form.
+
+The repository being ready for deployment does not mean a live service has already been deployed. Free hosting may sleep while idle. Configure shared rate-limit storage and outbound network restrictions before treating this as a public scanning service.
 
 ## Author
 
 **Casta** · [@ebe-ship-it](https://github.com/ebe-ship-it)
-
-## Deploy publicly (Render)
-
-A `render.yaml` blueprint is included and starts the app with Gunicorn, not Flask's development server.
-
-1. Sign in to [Render](https://render.com/) and choose **New → Blueprint**.
-2. Connect the `ebe-ship-it/casta-web-doctor` GitHub repository and select `main`.
-3. Review the `render.yaml` service and create the web service.
-4. Wait for the deployment to finish, then open the `onrender.com` URL Render assigns. Test `/health` and the scan form from your phone.
-
-Free services may sleep when idle and can take a little time to wake. Before using this as a public scanning service at scale, add rate limiting and enforce outbound network restrictions at the hosting/network layer to reduce SSRF and abuse risks.
