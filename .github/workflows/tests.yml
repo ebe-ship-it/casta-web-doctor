@@ -2,7 +2,7 @@ name: Casta Web Doctor Tests
 
 on:
   push:
-    branches: [main, finish-web-app]
+    branches: [main, finish-web-app, security/ssrf-hardening]
   pull_request:
     branches: [main]
 
