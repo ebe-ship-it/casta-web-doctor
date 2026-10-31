@@ -113,18 +113,18 @@ GitHub Actions runs the test suite when code is pushed to the main branch or a p
 
 The scanner accepts HTTP and HTTPS on their standard ports, checks destinations before requesting them, and validates redirects. It also includes request limits and basic security headers for the app itself.
 
-There are still limitations. DNS can change between validation and a request, so application-level checks alone cannot fully prevent DNS-rebinding SSRF. A public deployment needs network-level rules that block access to private networks and internal services. The current rate limiter uses in-memory storage, which is intended for a small beta; a larger multi-instance deployment should use shared storage such as Redis.
+There are still limitations. DNS can change between validation and a request, so application-level checks alone cannot fully prevent DNS-rebinding SSRF. A public deployment needs verified network-level rules that block access to private networks and internal services. The current rate limiter uses in-memory storage; limits are process-local and reset on restart. A multi-worker or multi-instance deployment should use shared storage such as Redis. Review the [production security checklist](docs/PRODUCTION_SECURITY_CHECKLIST.md) before launching publicly.
 
 Only scan websites you own or have permission to assess. Please don't use this project to harass a website or overload someone else's service.
 
-## Deploying on Render
+## Policies\n\n- [Privacy notice](/privacy)\n- [Acceptable use policy](/acceptable-use)\n- [Security policy](SECURITY.md)\n\nThe privacy notice explicitly explains that hosting logs and retention settings must be verified against the live deployment. Update it with verified facts and a support contact before broad public launch.\n\n## Deploying on Render
 
 The repository includes a `render.yaml` configuration for a Render web service.
 
 1. Open [Render](https://render.com/).
 2. Create a new Blueprint and connect this repository.
 3. Review the configuration and start the deployment.
-4. When deployment finishes, test the public website and its `/health` endpoint.
+4. When deployment finishes, test the public website, `/health`, `/privacy`, and `/acceptable-use`.\n5. Complete every release-blocking item in the [production security checklist](docs/PRODUCTION_SECURITY_CHECKLIST.md), especially outbound network isolation against SSRF and DNS rebinding.
 
 A deployment configuration doesn't mean the app is already live. Hosting plans and platform settings can change, so review the current options in your Render account.
 
