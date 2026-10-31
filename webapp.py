@@ -159,16 +159,16 @@ def api_scan_stream():
 
     @stream_with_context
     def generate():
-        yield "retry: 2000\\n\\n"
+        yield "retry: 2000\n\n"
         while True:
             try:
                 event = events.get(timeout=15)
             except queue.Empty:
-                yield ": keep-alive\\n\\n"
+                yield ": keep-alive\n\n"
                 continue
             if event is sentinel:
                 break
-            yield "data: " + json.dumps(event, separators=(",", ":")) + "\\n\\n"
+            yield "data: " + json.dumps(event, separators=(",", ":")) + "\n\n"
 
     return Response(generate(), mimetype="text/event-stream", headers={
         "Cache-Control": "no-cache, no-store",
