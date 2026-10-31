@@ -5,6 +5,7 @@ are validated individually and limited. Public deployments still need outbound
 network controls to protect against DNS-rebinding races.
 """
 import ipaddress
+import os
 import socket
 import time
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -144,6 +145,19 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
         "error": None,
     }
     start = time.perf_counter()
+
+    # Fail closed on hosted deployments until network-level egress restrictions
+    # are explicitly configured. DNS validation before requests.get() alone is
+    # vulnerable to DNS rebinding because the HTTP client may resolve again.
+    if (
+        os.environ.get("RENDER", "").lower() == "true"
+        and os.environ.get("SSRF_EGRESS_PROTECTED", "").lower() != "true"
+    ):
+        return _error(
+            result,
+            "security_configuration",
+            "Scanning is temporarily disabled until outbound network protection is configured.",
+        )
 
     try:
         current_url = _validate_public_destination(raw_url)
