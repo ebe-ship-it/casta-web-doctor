@@ -230,11 +230,29 @@ def test_hosted_scan_fails_closed_without_egress_protection(monkeypatch):
     assert result["error"]["code"] == "security_configuration"
 
 
-def test_hosted_scan_can_run_only_when_egress_protection_is_declared(monkeypatch):
+def test_hosted_scan_stays_disabled_even_if_environment_flag_is_set(monkeypatch):
     monkeypatch.setenv("RENDER", "true")
     monkeypatch.setenv("SSRF_EGRESS_PROTECTED", "true")
-    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse())
 
+    def unexpected_request(*args, **kwargs):
+        raise AssertionError("A configuration flag is not network isolation")
+
+    monkeypatch.setattr(requests, "get", unexpected_request)
     result = scan_website("example.com")
 
+    assert result["ok"] is False
+    assert result["error"]["code"] == "security_configuration"
+
+
+def test_scan_emits_actual_progress_milestones(monkeypatch):
+    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse())
+    events = []
+
+    result = scan_website("example.com", on_progress=events.append)
+
     assert result["ok"] is True
+    stages = [event["stage"] for event in events]
+    assert stages[0] == "started"
+    assert "validating_url" in stages
+    assert "request_started" in stages
+    assert stages[-1] == "completed"
