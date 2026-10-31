@@ -61,6 +61,18 @@ def index():
     return render_template("index.html")
 
 
+@app.get("/privacy")
+def privacy():
+    """Publish the privacy notice at a stable, discoverable route."""
+    return render_template("privacy.html")
+
+
+@app.get("/acceptable-use")
+def acceptable_use():
+    """Publish the acceptable-use policy at a stable route."""
+    return render_template("acceptable_use.html")
+
+
 @app.post("/api/scan")
 @limiter.limit("20 per minute")
 @limiter.limit("300 per day")
