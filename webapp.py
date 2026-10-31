@@ -54,7 +54,9 @@ def add_security_headers(response):
         "form-action 'self'; "
         "frame-ancestors 'none'",
     )
-    if request.path.startswith("/api/") or request.path == "/health":
+    if request.path == "/api/scan/stream":
+        response.headers["Cache-Control"] = "no-cache, no-store"
+    elif request.path.startswith("/api/") or request.path == "/health":
         response.headers["Cache-Control"] = "no-store"
     return response
 
