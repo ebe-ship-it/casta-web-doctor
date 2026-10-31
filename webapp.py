@@ -100,6 +100,24 @@ def api_scan():
     return jsonify(result)
 
 
+@app.errorhandler(429)
+def handle_rate_limit(_error):
+    if request.path.startswith("/api/"):
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": {
+                        "code": "rate_limited",
+                        "message": "Too many scans in a short period. Please wait before trying again.",
+                    },
+                }
+            ),
+            429,
+        )
+    return "Too many requests. Please wait before trying again.", 429
+
+
 @app.errorhandler(RequestEntityTooLarge)
 def handle_request_too_large(_error):
     if request.path.startswith("/api/"):
