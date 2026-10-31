@@ -30,6 +30,10 @@ class InvalidURLError(ValueError):
     """Raised when the website address cannot safely be scanned."""
 
 
+class DNSResolutionError(InvalidURLError):
+    """Raised when a syntactically valid hostname cannot be resolved."""
+
+
 def normalize_url(raw_url):
     """Return a normalized HTTP(S) URL, or raise InvalidURLError."""
     if not isinstance(raw_url, str):
@@ -91,7 +95,7 @@ def _validate_public_destination(url):
                 type=socket.SOCK_STREAM,
             )
         except (OSError, UnicodeError) as exc:
-            raise InvalidURLError(
+            raise DNSResolutionError(
                 "The domain could not be resolved to a public address."
             ) from exc
 
@@ -143,6 +147,8 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
 
     try:
         current_url = _validate_public_destination(raw_url)
+    except DNSResolutionError as error:
+        return _error(result, "dns_failed", str(error))
     except InvalidURLError as error:
         return _error(result, "invalid_url", str(error))
 
