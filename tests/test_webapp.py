@@ -170,3 +170,24 @@ def test_stream_requires_authorization_acknowledgement():
     response = app.test_client().post("/api/scan/stream", json={"url": "example.com"})
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "authorization_required"
+
+
+
+@pytest.mark.parametrize("acknowledgement", [False, None, 0, 1, "true", "yes", {}])
+@pytest.mark.parametrize("endpoint", ["/api/scan", "/api/scan/stream"])
+def test_scan_endpoints_reject_non_boolean_permission_acknowledgement(
+    monkeypatch, endpoint, acknowledgement
+):
+    def unexpected_scan(*args, **kwargs):
+        raise AssertionError("Scanner must not run without an explicit boolean acknowledgment")
+
+    monkeypatch.setattr(webapp, "scan_website", unexpected_scan)
+    response = app.test_client().post(
+        endpoint,
+        json={"url": "example.com", "authorized": acknowledgement},
+        buffered=True,
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["ok"] is False
+    assert response.get_json()["error"]["code"] == "authorization_required"
