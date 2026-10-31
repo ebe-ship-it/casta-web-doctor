@@ -156,6 +156,9 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
                 timeout=timeout,
                 allow_redirects=False,
                 stream=True,
+                # Ignore environment proxy variables so the scan does not
+                # silently route through an untrusted or internal proxy.
+                proxies={"http": "", "https": ""},
                 headers={
                     "User-Agent": USER_AGENT,
                     "Accept": "text/html,*/*;q=0.5",
