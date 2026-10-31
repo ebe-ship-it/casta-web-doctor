@@ -39,13 +39,23 @@ def test_api_rejects_non_json():
     "example.com",
     42,
     True,
-    None,
 ])
 def test_api_rejects_json_that_is_not_an_object(payload):
     response = app.test_client().post("/api/scan", json=payload)
 
     assert response.status_code == 400
     assert response.get_json()["ok"] is False
+    assert response.get_json()["error"]["code"] == "invalid_request"
+
+
+def test_api_rejects_json_null():
+    response = app.test_client().post(
+        "/api/scan",
+        data="null",
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "invalid_request"
 
 
