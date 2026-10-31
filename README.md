@@ -113,7 +113,7 @@ GitHub Actions runs the test suite when code is pushed to the main branch or a p
 
 The scanner accepts HTTP and HTTPS on their standard ports, checks destinations before requesting them, and validates redirects. It also includes request limits and basic security headers for the app itself.
 
-There are still limitations. DNS can change between validation and a request, so application-level checks alone cannot fully prevent DNS-rebinding SSRF. A public deployment needs network-level rules that block access to private networks and internal services. The current rate limiter uses in-memory storage, which is intended for a small beta; a larger multi-instance deployment should use shared storage such as Redis.
+There are still limitations. DNS can change between validation and a request, so application-level checks alone cannot fully prevent DNS-rebinding SSRF. A public deployment needs network-level rules that block access to private networks and internal services. To avoid pretending application-level DNS checks are sufficient, the scanner now fails closed on Render unless `SSRF_EGRESS_PROTECTED=true` is explicitly set. **Do not set this variable until outbound network controls are actually in place and tested**; setting it is a declaration, not a control by itself. The standard Render Blueprint does not configure a network egress firewall. The current rate limiter uses in-memory storage, which is intended for a small beta; a larger multi-instance deployment should use shared storage such as Redis.
 
 Only scan websites you own or have permission to assess. Please don't use this project to harass a website or overload someone else's service.
 
@@ -124,7 +124,7 @@ The repository includes a `render.yaml` configuration for a Render web service.
 1. Open [Render](https://render.com/).
 2. Create a new Blueprint and connect this repository.
 3. Review the configuration and start the deployment.
-4. When deployment finishes, test the public website and its `/health` endpoint.
+4. Before enabling scans on a public deployment, configure and verify outbound network controls that block private, loopback, link-local, and internal service destinations. Until then, Render-hosted scans intentionally return a security configuration error. The `/health` endpoint can still confirm the service is running.
 
 A deployment configuration doesn't mean the app is already live. Hosting plans and platform settings can change, so review the current options in your Render account.
 
