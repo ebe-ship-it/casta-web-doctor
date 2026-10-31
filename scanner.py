@@ -15,6 +15,7 @@ USER_AGENT = "CastaWebDoctor/1.1"
 TIMEOUT_SECONDS = 8
 MAX_URL_LENGTH = 2048
 MAX_REDIRECTS = 5
+MAX_TOTAL_SCAN_SECONDS = 25
 
 SECURITY_HEADERS = {
     "Strict-Transport-Security": "Tells browsers to prefer HTTPS for this site.",
@@ -125,7 +126,7 @@ def _close_response(response):
 
 
 def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
-    """Scan one public website, following a small, validated redirect chain."""
+    """Scan one public website within a bounded total time budget."""
     result = {
         "scan_type": "live",
         "ok": False,
@@ -138,6 +139,7 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
         "security_headers": [],
         "error": None,
     }
+    start = time.perf_counter()
 
     try:
         current_url = _validate_public_destination(raw_url)
@@ -145,25 +147,42 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
         return _error(result, "invalid_url", str(error))
 
     result["url"] = current_url
-    start = time.perf_counter()
 
     try:
         for hop in range(MAX_REDIRECTS + 1):
-            # Revalidate each hop immediately before making its request.
-            current_url = _validate_public_destination(current_url)
+            remaining = MAX_TOTAL_SCAN_SECONDS - (time.perf_counter() - start)
+            if remaining <= 0:
+                return _error(
+                    result,
+                    "timeout",
+                    "The website scan exceeded the total time limit.",
+                )
+
+            # Bound both connection and response-header waits by the remaining
+            # total budget. DNS resolution itself is platform-managed, so a
+            # production deployment should also use bounded DNS/network egress.
+            hop_timeout = min(timeout, remaining / 2)
             response = requests.get(
                 current_url,
-                timeout=timeout,
+                timeout=(hop_timeout, hop_timeout),
                 allow_redirects=False,
                 stream=True,
-                # Ignore environment proxy variables so the scan does not
-                # silently route through an untrusted or internal proxy.
+                # Empty scheme-specific proxy entries prevent Requests from
+                # silently routing the scan through environment proxy settings.
                 proxies={"http": "", "https": ""},
                 headers={
                     "User-Agent": USER_AGENT,
                     "Accept": "text/html,*/*;q=0.5",
                 },
             )
+
+            if time.perf_counter() - start >= MAX_TOTAL_SCAN_SECONDS:
+                _close_response(response)
+                return _error(
+                    result,
+                    "timeout",
+                    "The website scan exceeded the total time limit.",
+                )
 
             if response.status_code in (301, 302, 303, 307, 308):
                 location = response.headers.get("Location")
@@ -181,6 +200,8 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
                         "The website redirected too many times.",
                     )
                 try:
+                    # Validate the next destination here so each redirect hop
+                    # is resolved and checked once before its request.
                     current_url = _validate_public_destination(
                         urljoin(current_url, location)
                     )
@@ -193,6 +214,8 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
                 {
                     "ok": True,
                     "status_code": response.status_code,
+                    # stream=True means this measures time to response headers,
+                    # not the time to download the entire page body.
                     "response_time_ms": round(
                         (time.perf_counter() - start) * 1000
                     ),
@@ -223,5 +246,3 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
         )
     except requests.exceptions.RequestException:
         return _error(result, "request_failed", "The website request failed.")
-
-    return _error(result, "request_failed", "The scan could not be completed.")
