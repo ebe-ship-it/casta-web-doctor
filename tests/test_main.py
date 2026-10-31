@@ -1,4 +1,5 @@
 import requests
+import scanner
 
 from main import check_website
 
@@ -22,7 +23,7 @@ def test_adds_https_to_domain(monkeypatch, capsys):
         calls.append(url)
         return FakeResponse()
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
 
     check_website("example.com")
 
@@ -34,7 +35,7 @@ def test_reports_http_status(monkeypatch, capsys):
     def fake_get(url, **kwargs):
         return FakeResponse(status_code=404)
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
 
     check_website("https://example.com")
 
@@ -48,7 +49,7 @@ def test_reports_missing_security_headers(monkeypatch, capsys):
         response.headers = {}
         return response
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
 
     check_website("https://example.com")
 
@@ -60,7 +61,7 @@ def test_handles_timeout(monkeypatch, capsys):
     def fake_get(url, **kwargs):
         raise requests.exceptions.Timeout()
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(scanner._http_session, "get", fake_get)
 
     check_website("https://example.com")
 

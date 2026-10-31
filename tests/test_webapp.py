@@ -57,6 +57,7 @@ def test_api_rejects_invalid_url(monkeypatch):
 
 def test_api_rejects_private_destination(monkeypatch):
     monkeypatch.setenv("ENABLE_PUBLIC_SCANNING", "true")
+    monkeypatch.setenv("EGRESS_RESTRICTIONS_VERIFIED", "true")
     response = app.test_client().post("/api/scan", json={"url": "http://127.0.0.1"})
     assert response.status_code == 400
     assert response.get_json()["ok"] is False
@@ -78,6 +79,7 @@ def test_scanning_is_disabled_by_default(monkeypatch):
 
 def test_api_returns_successful_scan_when_explicitly_enabled(monkeypatch):
     monkeypatch.setenv("ENABLE_PUBLIC_SCANNING", "true")
+    monkeypatch.setenv("EGRESS_RESTRICTIONS_VERIFIED", "true")
     fake_report = {
         "scan_type": "live", "ok": True, "url": "https://example.com", "status_code": 200,
         "response_time_ms": 42, "final_url": "https://example.com/", "uses_https": True,
