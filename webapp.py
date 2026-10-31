@@ -99,6 +99,22 @@ def api_scan():
             400,
         )
 
+    # Enforce the user's permission acknowledgment at the API boundary.
+    # UI-only required checkboxes can be bypassed by direct HTTP requests.
+    if payload.get("authorized") is not True:
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": {
+                        "code": "authorization_required",
+                        "message": "Confirm that you own this website or have explicit permission to scan it.",
+                    },
+                }
+            ),
+            400,
+        )
+
     url = payload.get("url", "")
     if not isinstance(url, str) or len(url) > 2048:
         return (
