@@ -1,5 +1,8 @@
+import socket
+
 import pytest
 import requests
+import scanner
 
 from scanner import InvalidURLError, normalize_url, scan_website
 
@@ -13,6 +16,23 @@ class FakeResponse:
 
     def close(self):
         self.closed = True
+
+
+@pytest.fixture(autouse=True)
+def stub_public_dns(monkeypatch):
+    """Keep tests deterministic and independent of external DNS availability."""
+    def fake_getaddrinfo(host, port, type=socket.SOCK_STREAM):
+        return [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                socket.IPPROTO_TCP,
+                "",
+                ("93.184.216.34", port),
+            )
+        ]
+
+    monkeypatch.setattr(scanner.socket, "getaddrinfo", fake_getaddrinfo)
 
 
 def test_normalize_adds_https():
@@ -123,3 +143,61 @@ def test_invalid_url_does_not_make_request(monkeypatch):
     monkeypatch.setattr(requests, "get", fake_get)
     result = scan_website("https:///")
     assert result["error"]["code"] == "invalid_url"
+
+
+
+def test_scan_rejects_redirect_without_location(monkeypatch):
+    response = FakeResponse(
+        url="https://example.com/",
+        status_code=302,
+        headers={},
+    )
+    monkeypatch.setattr(requests, "get", lambda url, **kw: response)
+
+    result = scan_website("example.com")
+
+    assert result["ok"] is False
+    assert result["error"]["code"] == "redirect_error"
+    assert response.closed is True
+
+
+def test_scan_stops_after_redirect_limit(monkeypatch):
+    responses = [
+        FakeResponse(
+            url=f"https://example.com/{index}",
+            status_code=302,
+            headers={"Location": f"https://example.com/{index + 1}"},
+        )
+        for index in range(6)
+    ]
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(url)
+        return responses[len(calls) - 1]
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    result = scan_website("example.com")
+
+    assert result["ok"] is False
+    assert result["error"]["code"] == "too_many_redirects"
+    assert len(calls) == 6
+    assert all(response.closed for response in responses)
+
+
+def test_scan_uses_bounded_connect_and_read_timeouts(monkeypatch):
+    captured = {}
+
+    def fake_get(url, **kwargs):
+        captured.update(kwargs)
+        return FakeResponse()
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    result = scan_website("example.com")
+
+    assert result["ok"] is True
+    connect_timeout, read_timeout = captured["timeout"]
+    assert 0 < connect_timeout <= 8
+    assert 0 < read_timeout <= 8
