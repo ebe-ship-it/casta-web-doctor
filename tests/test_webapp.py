@@ -47,13 +47,15 @@ def test_api_rejects_json_null():
     assert response.get_json()["error"]["code"] == "invalid_request"
 
 
-def test_api_rejects_invalid_url():
+def test_api_rejects_invalid_url(monkeypatch):
+    monkeypatch.setenv("ENABLE_PUBLIC_SCANNING", "true")
     response = app.test_client().post("/api/scan", json={"url": "ftp://example.com"})
     assert response.status_code == 400
     assert response.get_json()["ok"] is False
 
 
-def test_api_rejects_private_destination():
+def test_api_rejects_private_destination(monkeypatch):
+    monkeypatch.setenv("ENABLE_PUBLIC_SCANNING", "true")
     response = app.test_client().post("/api/scan", json={"url": "http://127.0.0.1"})
     assert response.status_code == 400
     assert response.get_json()["ok"] is False
