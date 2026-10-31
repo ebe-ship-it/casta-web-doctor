@@ -194,6 +194,14 @@ def api_scan_stream():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"ok": False, "error": {"code": "invalid_request", "message": "Send a JSON object containing a website address."}}), 400
+    if payload.get("authorized") is not True:
+        return jsonify({
+            "ok": False,
+            "error": {
+                "code": "authorization_required",
+                "message": "Confirm that you own this website or have explicit permission to scan it.",
+            },
+        }), 400
     url = payload.get("url", "")
     if not isinstance(url, str) or len(url) > 2048:
         return jsonify({"ok": False, "error": {"code": "invalid_url", "message": "Enter a valid website address."}}), 400
