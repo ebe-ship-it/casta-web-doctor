@@ -79,7 +79,21 @@ def api_scan():
             415,
         )
 
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": {
+                        "code": "invalid_request",
+                        "message": "Send a JSON object containing a website address.",
+                    },
+                }
+            ),
+            400,
+        )
+
     url = payload.get("url", "")
     if not isinstance(url, str) or len(url) > 2048:
         return (
