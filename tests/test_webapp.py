@@ -102,3 +102,24 @@ def test_api_returns_successful_scan(monkeypatch):
     assert response.get_json()["ok"] is True
     assert response.get_json()["response_time_ms"] == 42
     assert response.headers["Cache-Control"] == "no-store"
+
+
+
+def test_privacy_notice_is_published():
+    response = app.test_client().get("/privacy")
+    assert response.status_code == 200
+    assert b"Privacy notice" in response.data
+    assert b"retention period" in response.data
+
+
+def test_acceptable_use_policy_is_published():
+    response = app.test_client().get("/acceptable-use")
+    assert response.status_code == 200
+    assert b"Acceptable use policy" in response.data
+    assert b"permission" in response.data.lower()
+
+
+def test_homepage_links_to_policies():
+    response = app.test_client().get("/")
+    assert b'href="/privacy"' in response.data
+    assert b'href="/acceptable-use"' in response.data
