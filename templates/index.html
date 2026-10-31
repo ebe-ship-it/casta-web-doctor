@@ -47,7 +47,7 @@ input::placeholder{color:#98a098}
 .submit{margin-top:12px;width:100%;border:0;border-radius:12px;background:var(--green);color:#fff;padding:15px 18px;display:flex;align-items:center;justify-content:center;gap:12px;font-weight:800;cursor:pointer;transition:background .2s,transform .2s}
 .submit:hover{background:#1a553e;transform:translateY(-1px)}
 .submit:disabled{opacity:.65;cursor:wait;transform:none}
-.form-hint{font-size:11px;line-height:1.55;color:var(--muted);margin:13px 0 0}
+.form-hint{font-size:11px;line-height:1.55;color:var(--muted);margin:13px 0 0}.permission-check{display:flex;align-items:flex-start;gap:10px;margin-top:14px;font-size:12px;line-height:1.55;color:var(--muted)}.permission-check input{width:16px;height:16px;flex:0 0 16px;margin:2px 0 0;accent-color:var(--green)}.policy-links{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px}.policy-links a{color:var(--green);text-underline-offset:3px}
 .error{margin-top:14px;padding:12px 13px;border:1px solid #e7c3b7;background:#fff1ec;color:#8a3d28;border-radius:10px;font-size:13px}
 .scan-log{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:#f7f7f2;padding:13px 14px}
 .scan-log-head{display:flex;justify-content:space-between;gap:12px;font-size:11px;font-weight:800}
@@ -217,8 +217,8 @@ h1 em{color:#355c45}
 <form id="scan-form">
 <label for="url">Website address</label>
 <div class="input-wrap"><span class="input-icon" aria-hidden="true">↗</span><input id="url" name="url" type="text" inputmode="url" placeholder="yourwebsite.com" autocomplete="url" maxlength="2048" spellcheck="false" required aria-describedby="url-hint"></div>
-<button id="scan-btn" class="submit" type="submit"><span id="button-label">Check website</span><span aria-hidden="true">↗</span></button>
-<p class="form-hint" id="url-hint">We check public pages only, using standard HTTP/HTTPS ports. Scan only websites you own or have permission to assess.</p>
+<label class="permission-check" for="authorized"><input id="authorized" name="authorized" type="checkbox" required><span>I own this website or have explicit permission from its owner to run this check, and I will use the service lawfully.</span></label>\n<button id="scan-btn" class="submit" type="submit"><span id="button-label">Check website</span><span aria-hidden="true">↗</span></button>
+<p class="form-hint" id="url-hint">We check public pages only, using standard HTTP/HTTPS ports. This is a basic diagnostic, not a penetration test or legal-compliance certificate.</p>\n<div class="policy-links"><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy notice</a><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/ACCEPTABLE_USE.md" target="_blank" rel="noopener noreferrer">Acceptable use</a></div>
 <div id="error" class="error" role="alert" hidden></div>
 <div id="scan-log" class="scan-log" aria-live="polite" hidden>
 <div class="scan-log-head"><span>SCAN ACTIVITY</span><span id="scan-log-state" class="scan-log-state">Ready</span></div>
@@ -235,7 +235,7 @@ h1 em{color:#355c45}
 </section>
 <section id="results" class="results" hidden aria-live="polite" aria-busy="false"></section>
 </main>
-<footer class="footer"><div><strong>CASTA WEB DOCTOR</strong> · Built for practical checks.</div><div>Early beta · Not a full security audit.</div></footer>
+<footer class="footer"><div><strong>CASTA WEB DOCTOR</strong> · Built for practical checks.<div class="policy-links"><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/ACCEPTABLE_USE.md" target="_blank" rel="noopener noreferrer">Acceptable use</a></div></div><div>Early beta · Not a full security audit.</div></footer>
 </div>
 <script>
 (function(){
