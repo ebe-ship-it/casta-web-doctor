@@ -114,3 +114,47 @@ def test_api_returns_service_unavailable_when_hosted_scanning_is_unprotected(mon
     assert response.status_code == 503
     assert response.get_json()["ok"] is False
     assert response.get_json()["error"]["code"] == "security_configuration"
+
+
+
+def test_stream_endpoint_delivers_real_progress_and_report(monkeypatch):
+    fake_report = {
+        "scan_type": "live",
+        "ok": True,
+        "url": "https://example.com",
+        "status_code": 200,
+        "response_time_ms": 15,
+        "final_url": "https://example.com/",
+        "uses_https": True,
+        "redirect_count": 0,
+        "security_headers": [],
+        "error": None,
+    }
+
+    def fake_scan(url, on_progress=None):
+        on_progress({"stage": "started", "message": "Scan request accepted"})
+        on_progress({"stage": "request_started", "message": "Waiting for response headers"})
+        on_progress({"stage": "completed", "message": "Scan completed", "status_code": 200})
+        return fake_report
+
+    monkeypatch.setattr(webapp, "scan_website", fake_scan)
+    response = app.test_client().post(
+        "/api/scan/stream",
+        json={"url": "example.com"},
+        buffered=True,
+    )
+
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert response.mimetype == "text/event-stream"
+    assert '"stage":"started"' in body
+    assert '"stage":"request_started"' in body
+    assert '"type":"result"' in body
+    assert '"status_code":200' in body
+    assert response.headers["Cache-Control"] == "no-cache, no-store"
+
+
+def test_stream_endpoint_rejects_non_object_json():
+    response = app.test_client().post("/api/scan/stream", json=["example.com"])
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "invalid_request"
