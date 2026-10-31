@@ -1,7 +1,10 @@
 """Small, production-oriented Flask interface for Casta Web Doctor."""
+import json
 import os
+import queue
+import threading
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -120,6 +123,58 @@ def api_scan():
         )
         return jsonify(result), status
     return jsonify(result)
+
+
+@app.post("/api/scan/stream")
+@limiter.limit("20 per minute")
+@limiter.limit("300 per day")
+def api_scan_stream():
+    """Stream real scanner milestones as Server-Sent Events over a POST request."""
+    if not request.is_json:
+        return jsonify({"ok": False, "error": {"code": "invalid_request", "message": "Send a JSON request."}}), 415
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"ok": False, "error": {"code": "invalid_request", "message": "Send a JSON object containing a website address."}}), 400
+    url = payload.get("url", "")
+    if not isinstance(url, str) or len(url) > 2048:
+        return jsonify({"ok": False, "error": {"code": "invalid_url", "message": "Enter a valid website address."}}), 400
+
+    events = queue.Queue()
+    sentinel = object()
+
+    def publish(event):
+        events.put({"type": "progress", **event})
+
+    def run_scan():
+        try:
+            result = scan_website(url, on_progress=publish)
+            events.put({"type": "result", "result": result})
+        except Exception:
+            # Never expose stack traces or internal details to the client.
+            events.put({"type": "result", "result": {"ok": False, "error": {"code": "internal_error", "message": "The scan could not be completed."}}})
+        finally:
+            events.put(sentinel)
+
+    threading.Thread(target=run_scan, daemon=True).start()
+
+    @stream_with_context
+    def generate():
+        yield "retry: 2000\\n\\n"
+        while True:
+            try:
+                event = events.get(timeout=15)
+            except queue.Empty:
+                yield ": keep-alive\\n\\n"
+                continue
+            if event is sentinel:
+                break
+            yield "data: " + json.dumps(event, separators=(",", ":")) + "\\n\\n"
+
+    return Response(generate(), mimetype="text/event-stream", headers={
+        "Cache-Control": "no-cache, no-store",
+        "X-Accel-Buffering": "no",
+        "Connection": "keep-alive",
+    })
 
 
 @app.errorhandler(429)
