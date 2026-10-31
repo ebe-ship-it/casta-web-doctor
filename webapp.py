@@ -1,7 +1,10 @@
 """Small, production-oriented Flask interface for Casta Web Doctor."""
+import json
 import os
+import queue
+import threading
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -51,14 +54,57 @@ def add_security_headers(response):
         "form-action 'self'; "
         "frame-ancestors 'none'",
     )
-    if request.path.startswith("/api/") or request.path == "/health":
+    if request.path == "/api/scan/stream":
+        response.headers["Cache-Control"] = "no-cache, no-store"
+    elif request.path.startswith("/api/") or request.path == "/health":
         response.headers["Cache-Control"] = "no-store"
     return response
+
+
+def public_site_url():
+    """Return the configured canonical public origin, without a trailing slash."""
+    configured = os.environ.get("PUBLIC_SITE_URL", "").strip().rstrip("/")
+    if configured.startswith("https://") or configured.startswith("http://"):
+        return configured
+    return request.url_root.rstrip("/")
+
+
+@app.context_processor
+def inject_site_url():
+    return {"site_url": public_site_url()}
 
 
 @app.get("/")
 def index():
     return render_template("index.html")
+
+
+@app.get("/robots.txt")
+def robots_txt():
+    """Let crawlers index public pages while excluding API and health endpoints."""
+    body = (
+        "User-agent: *\\n"
+        "Allow: /\\n"
+        "Disallow: /api/\\n"
+        "Disallow: /health\\n"
+        f"Sitemap: {public_site_url()}/sitemap.xml\\n"
+    )
+    return Response(body, mimetype="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml():
+    """Publish a small sitemap containing only the public homepage."""
+    from xml.sax.saxutils import escape
+
+    homepage = escape(public_site_url() + "/")
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"<url><loc>{homepage}</loc></url>"
+        "</urlset>"
+    )
+    return Response(body, mimetype="application/xml")
 
 
 @app.post("/api/scan")
@@ -94,6 +140,22 @@ def api_scan():
             400,
         )
 
+    # Enforce the user's permission acknowledgment at the API boundary.
+    # UI-only required checkboxes can be bypassed by direct HTTP requests.
+    if payload.get("authorized") is not True:
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": {
+                        "code": "authorization_required",
+                        "message": "Confirm that you own this website or have explicit permission to scan it.",
+                    },
+                }
+            ),
+            400,
+        )
+
     url = payload.get("url", "")
     if not isinstance(url, str) or len(url) > 2048:
         return (
@@ -114,10 +176,72 @@ def api_scan():
         status = (
             400
             if result["error"]["code"] in ("invalid_url", "unsafe_redirect")
+            else 503
+            if result["error"]["code"] == "security_configuration"
             else 502
         )
         return jsonify(result), status
     return jsonify(result)
+
+
+@app.post("/api/scan/stream")
+@limiter.limit("20 per minute")
+@limiter.limit("300 per day")
+def api_scan_stream():
+    """Stream real scanner milestones as Server-Sent Events over a POST request."""
+    if not request.is_json:
+        return jsonify({"ok": False, "error": {"code": "invalid_request", "message": "Send a JSON request."}}), 415
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"ok": False, "error": {"code": "invalid_request", "message": "Send a JSON object containing a website address."}}), 400
+    if payload.get("authorized") is not True:
+        return jsonify({
+            "ok": False,
+            "error": {
+                "code": "authorization_required",
+                "message": "Confirm that you own this website or have explicit permission to scan it.",
+            },
+        }), 400
+    url = payload.get("url", "")
+    if not isinstance(url, str) or len(url) > 2048:
+        return jsonify({"ok": False, "error": {"code": "invalid_url", "message": "Enter a valid website address."}}), 400
+
+    events = queue.Queue()
+    sentinel = object()
+
+    def publish(event):
+        events.put({"type": "progress", **event})
+
+    def run_scan():
+        try:
+            result = scan_website(url, on_progress=publish)
+            events.put({"type": "result", "result": result})
+        except Exception:
+            # Never expose stack traces or internal details to the client.
+            events.put({"type": "result", "result": {"ok": False, "error": {"code": "internal_error", "message": "The scan could not be completed."}}})
+        finally:
+            events.put(sentinel)
+
+    threading.Thread(target=run_scan, daemon=True).start()
+
+    @stream_with_context
+    def generate():
+        yield "retry: 2000\n\n"
+        while True:
+            try:
+                event = events.get(timeout=15)
+            except queue.Empty:
+                yield ": keep-alive\n\n"
+                continue
+            if event is sentinel:
+                break
+            yield "data: " + json.dumps(event, separators=(",", ":")) + "\n\n"
+
+    return Response(generate(), mimetype="text/event-stream", headers={
+        "Cache-Control": "no-cache, no-store",
+        "X-Accel-Buffering": "no",
+        "Connection": "keep-alive",
+    })
 
 
 @app.errorhandler(429)

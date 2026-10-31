@@ -5,6 +5,7 @@ are validated individually and limited. Public deployments still need outbound
 network controls to protect against DNS-rebinding races.
 """
 import ipaddress
+import os
 import socket
 import time
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -129,8 +130,15 @@ def _close_response(response):
         close()
 
 
-def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
+def scan_website(raw_url, timeout=TIMEOUT_SECONDS, on_progress=None):
     """Scan one public website within a bounded total time budget."""
+    def progress(stage, message, **details):
+        if callable(on_progress):
+            try:
+                on_progress({"stage": stage, "message": message, **details})
+            except Exception:
+                # Reporting callbacks must never interrupt security checks.
+                pass
     result = {
         "scan_type": "live",
         "ok": False,
@@ -144,7 +152,20 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
         "error": None,
     }
     start = time.perf_counter()
+    progress("started", "Scan request accepted")
 
+    # Fail closed on hosted deployments until network-level egress restrictions
+    # are explicitly configured. DNS validation before requests.get() alone is
+    # vulnerable to DNS rebinding because the HTTP client may resolve again.
+    if os.environ.get("RENDER", "").lower() == "true":
+        progress("blocked", "Scan blocked: this host has no verified outbound network isolation")
+        return _error(
+            result,
+            "security_configuration",
+            "Scanning is temporarily disabled until outbound network protection is configured.",
+        )
+
+    progress("validating_url", "Validating URL and resolving its destination")
     try:
         current_url = _validate_public_destination(raw_url)
     except DNSResolutionError as error:
@@ -153,6 +174,7 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
         return _error(result, "invalid_url", str(error))
 
     result["url"] = current_url
+    progress("destination_validated", "Destination passed the public-address checks")
 
     try:
         for hop in range(MAX_REDIRECTS + 1):
@@ -168,6 +190,7 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
             # total budget. DNS resolution itself is platform-managed, so a
             # production deployment should also use bounded DNS/network egress.
             hop_timeout = min(timeout, remaining / 2)
+            progress("request_started", "Waiting for response headers", redirect_hop=hop)
             response = requests.get(
                 current_url,
                 timeout=(hop_timeout, hop_timeout),
@@ -214,6 +237,7 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
                 except InvalidURLError as error:
                     return _error(result, "unsafe_redirect", str(error))
                 result["redirect_count"] += 1
+                progress("redirect", "Redirect destination validated", redirect_hop=hop + 1)
                 continue
 
             result.update(
@@ -238,6 +262,7 @@ def scan_website(raw_url, timeout=TIMEOUT_SECONDS):
                 }
             )
             _close_response(response)
+            progress("completed", "Scan completed", status_code=result["status_code"])
             return result
 
     except requests.exceptions.Timeout:

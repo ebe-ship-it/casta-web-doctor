@@ -1,6 +1,30 @@
+# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 venv/
+
+# Local environment files (keep the safe template only)
 .env
+.env.*
+!.env.example
+
+# Credentials, private keys and local state
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+secrets/
+*.tfstate
+*.tfstate.*
+
+# Local backups and editor files
+*.backup
+*.pre-integration
+*.step*-backup
+*.swp
+*.swo
+.DS_Store

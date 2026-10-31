@@ -4,9 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5f3ee">
-<meta name="description" content="A clear, practical website health check from Casta Web Doctor. Check availability, response time, HTTPS, redirects and security headers.">
+<meta name="description" content="Free website health checker for developers and small businesses. Check HTTP status, response time, HTTPS, redirects and common security headers with clear explanations.">
+<meta name="robots" content="index,follow,max-image-preview:large">
 <meta name="color-scheme" content="light">
-<title>Casta Web Doctor — A clearer view of your website</title>
+<meta name="author" content="Casta Web Doctor">
+<link rel="canonical" href="{{ site_url }}/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Casta Web Doctor">
+<meta property="og:title" content="Free Website Health Checker | Casta Web Doctor">
+<meta property="og:description" content="Check website availability, speed, HTTPS, redirects and security headers in one clear report.">
+<meta property="og:url" content="{{ site_url }}/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free Website Health Checker | Casta Web Doctor">
+<meta name="twitter:description" content="Check website availability, speed, HTTPS, redirects and security headers in one clear report.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Casta Web Doctor",
+  "url": "{{ site_url }}/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "description": "A free website health checker that reports HTTP status, response time, HTTPS use, redirects and common security headers.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<title>Free Website Health Checker | Casta Web Doctor</title>
 <style>
 :root{--paper:#f5f3ee;--white:#fffefa;--ink:#17211d;--muted:#66716a;--line:#dcded6;--green:#246b50;--green-soft:#e5eee7;--orange:#dc7147;--orange-soft:#f7e7df;--shadow:0 22px 60px rgba(30,43,34,.08);--radius:22px}
 *{box-sizing:border-box}
@@ -47,8 +70,16 @@ input::placeholder{color:#98a098}
 .submit{margin-top:12px;width:100%;border:0;border-radius:12px;background:var(--green);color:#fff;padding:15px 18px;display:flex;align-items:center;justify-content:center;gap:12px;font-weight:800;cursor:pointer;transition:background .2s,transform .2s}
 .submit:hover{background:#1a553e;transform:translateY(-1px)}
 .submit:disabled{opacity:.65;cursor:wait;transform:none}
-.form-hint{font-size:11px;line-height:1.55;color:var(--muted);margin:13px 0 0}
+.form-hint{font-size:11px;line-height:1.55;color:var(--muted);margin:13px 0 0}.permission-check{display:flex;align-items:flex-start;gap:10px;margin-top:14px;font-size:12px;line-height:1.55;color:var(--muted)}.permission-check input{width:16px;height:16px;flex:0 0 16px;margin:2px 0 0;accent-color:var(--green)}.policy-links{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px}.policy-links a{color:var(--green);text-underline-offset:3px}
 .error{margin-top:14px;padding:12px 13px;border:1px solid #e7c3b7;background:#fff1ec;color:#8a3d28;border-radius:10px;font-size:13px}
+.scan-log{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:#f7f7f2;padding:13px 14px}
+.scan-log-head{display:flex;justify-content:space-between;gap:12px;font-size:11px;font-weight:800}
+.scan-log-state{color:var(--green)}
+.scan-log-list{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}
+.scan-log-list li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.log-mark{font-weight:900;color:var(--green)}
+.log-time{font-variant-numeric:tabular-nums;color:#8a9189;font-size:10px;white-space:nowrap}
+.scan-log-list li.active .log-mark{color:var(--orange)}
 .preview{margin-top:20px;border:1px solid var(--line);border-radius:15px;padding:15px;background:#f7f7f2}
 .preview-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800}
 .preview-label{color:var(--muted);font-weight:600}
@@ -93,13 +124,108 @@ input::placeholder{color:#98a098}
 @media(max-width:850px){.shell{padding:0 22px}.hero{grid-template-columns:1fr;gap:34px;padding:58px 0 48px}.intro{max-width:620px}.scan-card{max-width:600px;width:100%}.benefits{margin-bottom:54px}.hero h1{max-width:600px}}
 @media(max-width:560px){.shell{padding:0 17px}.topbar{height:70px}.nav-note{font-size:10px}.hero{padding:44px 0 36px;gap:27px}h1{font-size:clamp(46px,13vw,66px);margin:18px 0}.intro{font-size:15px}.proofline{gap:12px;margin-top:20px}.scan-card{padding:20px;border-radius:18px}.benefits{grid-template-columns:1fr;gap:17px;padding:22px 0;margin-bottom:42px}.benefit,.benefit:first-child,.benefit:last-child{padding:0;border:0}.benefit p{margin-top:2px}.results{padding:19px;margin-bottom:45px}.results-head{flex-direction:column;gap:12px}.results h2{font-size:27px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:17px 0}.metric{padding:12px}.metric-value{font-size:22px}.check{grid-template-columns:26px minmax(0,1fr);gap:9px}.check-status{grid-column:2;padding-top:0}.footer{flex-direction:column;gap:6px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
+
+/* Editorial product-design pass: restrained palette, clear hierarchy, no gradients. */
+:root{--paper:#f3f2ed;--white:#fff;--ink:#171916;--muted:#666b63;--line:#d8d9d1;--green:#244f3b;--green-soft:#e7eee8;--orange:#b66a43;--orange-soft:#f4e9e1;--shadow:0 12px 34px rgba(20,25,20,.055);--radius:14px}
+body{background:var(--paper);font-size:14px;line-height:1.65}
+.shell{max-width:1120px}
+.topbar{height:76px;border-bottom-color:#d1d2ca}
+.brand-mark{border-radius:8px;background:#20231f;letter-spacing:-.09em}
+.brand-name{font-size:15px;letter-spacing:-.035em}
+.brand-name small{font-size:9px;letter-spacing:.14em}
+.nav-note{font-size:11px}
+.hero{gap:clamp(34px,6vw,76px);padding:76px 0 62px}
+.kicker{font-size:10px;letter-spacing:.14em;color:#355c45}
+.kicker:before{background:#b66a43;width:20px}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(48px,6vw,72px);line-height:1.01;letter-spacing:-.055em;margin:21px 0 20px}
+h1 em{color:#355c45}
+.intro{font-size:16px;line-height:1.75;max-width:480px;color:#5e645d}
+.proofline{gap:16px;font-size:11px}
+.scan-card{border-radius:14px;padding:25px;background:#fff;border-color:#d9dbd3;box-shadow:0 18px 45px rgba(20,25,20,.07)}
+.scan-card:before{display:none}
+.card-head{padding-bottom:17px}
+.card-title{font-size:15px}
+.tag{border-radius:5px;font-size:9px;letter-spacing:.06em}
+.input-wrap{border-radius:8px;border-color:#c9ccc3}
+.input-wrap:focus-within{box-shadow:0 0 0 3px rgba(36,79,59,.10)}
+.submit{border-radius:8px;background:#20231f;padding:14px 18px;font-size:13px}
+.submit:hover{background:#35443a}
+.form-hint{font-size:10px}
+.preview{background:#f7f7f3;border-radius:8px}
+.benefits{padding:24px 0;margin-bottom:68px;border-color:#d1d2ca}
+.benefit{padding:0 22px}
+.benefit strong{font-size:12px}
+.benefit p{font-size:11px}
+.results{border-radius:14px;padding:27px;box-shadow:var(--shadow)}
+.results h2{font-size:29px}
+.metric{border-radius:8px;background:#fff}
+.final-url{border-radius:7px;background:#f4f4ef}
+.report-note{background:#f7f1eb}
+.scan-log{border-radius:8px;background:#f7f7f3}
+.footer{border-color:#d1d2ca}
+@media(max-width:850px){.hero{padding:55px 0 46px;gap:30px}}
+@media(max-width:560px){.topbar{height:68px}.hero{padding:42px 0 34px}h1{font-size:clamp(45px,12.5vw,62px)}.scan-card{padding:19px}.results{padding:18px}}
+
+/* Liquid-glass controls, restrained so text stays readable and fast on mobile. */
+.glass-btn,.submit,.secondary-action{
+ position:relative;isolation:isolate;overflow:hidden;
+ border:1px solid rgba(255,255,255,.72);
+ background:rgba(255,255,255,.34);
+ color:var(--ink);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(25,35,27,.08),0 7px 18px rgba(25,35,27,.09);
+ backdrop-filter:blur(16px) saturate(145%);
+ -webkit-backdrop-filter:blur(16px) saturate(145%);
+ transition:transform .22s ease,box-shadow .22s ease,background .22s ease;
+}
+.submit{background:rgba(36,79,59,.91);color:#fff;border-color:rgba(255,255,255,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 8px 22px rgba(36,79,59,.19)}
+.submit:before,.glass-btn:before,.secondary-action:before{content:"";position:absolute;inset:1px 1px auto;height:48%;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.3),transparent);pointer-events:none;z-index:-1}
+.submit:hover{background:rgba(29,69,49,.96);transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 12px 28px rgba(36,79,59,.24)}
+.submit:active,.glass-btn:active,.secondary-action:active{transform:translateY(0) scale(.99)}
+.submit:disabled{opacity:.7}
+.topbar{position:relative;gap:18px}
+.trust-nav{display:flex;align-items:center;gap:9px}
+.trust-pill{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid rgba(36,79,59,.16);border-radius:999px;background:rgba(255,255,255,.5);font-size:10px;font-weight:750;color:#315640;white-space:nowrap}
+.trust-pill svg{width:13px;height:13px;flex:none}
+.trust-band{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;margin:22px 0 0;border:1px solid rgba(36,79,59,.13);border-radius:12px;background:linear-gradient(110deg,rgba(255,255,255,.78),rgba(232,239,232,.68));box-shadow:inset 0 1px 0 rgba(255,255,255,.95);overflow:hidden}
+.trust-band-copy{min-width:0}
+.trust-band-title{font-size:11px;font-weight:850;letter-spacing:.01em;display:flex;align-items:center;gap:8px}
+.trust-band-title .trust-shield{width:23px;height:23px;border-radius:7px;background:#e2ece4;display:grid;place-items:center;color:#315640;flex:none}
+.trust-band-title svg{width:14px;height:14px}
+.trust-band-note{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5}
+.trust-band-state{display:flex;align-items:center;gap:7px;font-size:10px;color:#315640;font-weight:800;white-space:nowrap}
+.trust-band-state i{width:6px;height:6px;border-radius:50%;background:#5d8a68;display:inline-block;animation:trustPulse 2.3s ease-in-out infinite}
+@keyframes trustPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(70,120,82,.12)}50%{opacity:.68;box-shadow:0 0 0 5px rgba(70,120,82,.08)}}
+.hero-trust{margin-top:24px}
+.hero-trust .trust-band{margin-top:0}
+.results{scroll-margin-top:22px}
+.results.is-loading{min-height:230px}
+.results-loading{display:flex;align-items:center;gap:14px;padding:28px 0}
+.loader-orbit{width:34px;height:34px;border:2px solid #dce5dc;border-top-color:var(--green);border-right-color:var(--orange);border-radius:50%;animation:orbitSpin .85s linear infinite;flex:none}
+@keyframes orbitSpin{to{transform:rotate(360deg)}}
+.results-loading strong{display:block;font-size:14px}
+.results-loading p{font-size:11px;color:var(--muted);margin:3px 0 0}
+.metric{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+.metric:hover{transform:translateY(-2px);border-color:#bac9bb;box-shadow:0 8px 18px rgba(25,35,27,.045)}
+.results.is-ready .results-head,.results.is-ready .metrics,.results.is-ready .final-url,.results.is-ready .section-heading,.results.is-ready .check,.results.is-ready .report-note{animation:reportEnter .42s both}
+.results.is-ready .metrics{animation-delay:.06s}
+.results.is-ready .final-url{animation-delay:.1s}
+.results.is-ready .section-heading{animation-delay:.14s}
+.results.is-ready .check:nth-of-type(1){animation-delay:.16s}
+.results.is-ready .check:nth-of-type(2){animation-delay:.2s}
+.results.is-ready .check:nth-of-type(3){animation-delay:.24s}
+.results.is-ready .check:nth-of-type(4){animation-delay:.28s}
+.results.is-ready .check:nth-of-type(5){animation-delay:.32s}
+@keyframes reportEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.metric-value .counting{font-variant-numeric:tabular-nums}
+@media(max-width:650px){.trust-pill{font-size:0;padding:8px}.trust-pill svg{width:15px;height:15px}.trust-band{align-items:flex-start;padding:12px}.trust-band-state{font-size:9px}.hero-trust{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){.trust-band-state i,.loader-orbit,.results.is-ready .results-head,.results.is-ready .metrics,.results.is-ready .final-url,.results.is-ready .section-heading,.results.is-ready .check,.results.is-ready .report-note{animation:none!important}.metric,.submit{transition:none!important}}
 </style>
 </head>
 <body>
 <div class="shell">
 <header class="topbar">
 <a class="brand" href="/" aria-label="Casta Web Doctor home"><span class="brand-mark">C.</span><span class="brand-name">Casta Web Doctor<small>WEBSITE DIAGNOSTICS</small></span></a>
-<div class="nav-note"><span class="status-dot" aria-hidden="true"></span> Simple checks. Clear answers.</div>
+<div class="trust-nav"><span class="trust-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 19 6v5c0 4.5-3 7.5-7 10-4-2.5-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>Privacy-conscious checks</span><div class="nav-note"><span class="status-dot" aria-hidden="true"></span> Clear results</div></div>
 </header>
 <main>
 <section class="hero">
@@ -107,16 +233,20 @@ input::placeholder{color:#98a098}
 <div class="kicker">A practical website check</div>
 <h1>Know what's<br>happening with<br><em>your website.</em></h1>
 <p class="intro">Check the basics that matter: whether your site responds, how quickly it answers, whether it uses HTTPS, and which security headers it sends. No noise. Just a useful starting point.</p>
-<div class="proofline"><span><b class="tick">✓</b> No account needed</span><span><b class="tick">✓</b> Made for quick checks</span></div>
+<div class="proofline"><span><b class="tick">✓</b> No account needed</span><span><b class="tick">✓</b> Made for quick checks</span></div><div class="hero-trust"><div class="trust-band"><div class="trust-band-copy"><div class="trust-band-title"><span class="trust-shield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 19 6v5c0 4.5-3 7.5-7 10-4-2.5-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span id="trust-title">Transparent by design</span></div><div class="trust-band-note" id="trust-note">Clear checks, plain-language findings, no claim of a full security audit.</div></div><div class="trust-band-state"><i aria-hidden="true"></i><span id="trust-state">Built for clarity</span></div></div></div>
 </div>
 <section class="scan-card" aria-labelledby="scan-title">
 <div class="card-head"><div><div class="card-title" id="scan-title">Run a website check</div><div class="card-subtitle">Enter a public website address to begin.</div></div><span class="tag">Free · Beta</span></div>
 <form id="scan-form">
 <label for="url">Website address</label>
 <div class="input-wrap"><span class="input-icon" aria-hidden="true">↗</span><input id="url" name="url" type="text" inputmode="url" placeholder="yourwebsite.com" autocomplete="url" maxlength="2048" spellcheck="false" required aria-describedby="url-hint"></div>
-<button id="scan-btn" class="submit" type="submit"><span id="button-label">Check website</span><span aria-hidden="true">↗</span></button>
-<p class="form-hint" id="url-hint">We check public pages only, using standard HTTP/HTTPS ports. Scan only websites you own or have permission to assess.</p>
+<label class="permission-check" for="authorized"><input id="authorized" name="authorized" type="checkbox" required><span>I own this website or have explicit permission from its owner to run this check, and I will use the service lawfully.</span></label>\n<button id="scan-btn" class="submit" type="submit"><span id="button-label">Check website</span><span aria-hidden="true">↗</span></button>
+<p class="form-hint" id="url-hint">We check public pages only, using standard HTTP/HTTPS ports. This is a basic diagnostic, not a penetration test or legal-compliance certificate.</p>\n<div class="policy-links"><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy notice</a><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/ACCEPTABLE_USE.md" target="_blank" rel="noopener noreferrer">Acceptable use</a></div>
 <div id="error" class="error" role="alert" hidden></div>
+<div id="scan-log" class="scan-log" aria-live="polite" hidden>
+<div class="scan-log-head"><span>SCAN ACTIVITY</span><span id="scan-log-state" class="scan-log-state">Ready</span></div>
+<ol id="scan-log-list" class="scan-log-list"></ol>
+</div>
 </form>
 <div class="preview" aria-hidden="true"><div class="preview-head"><span>WHAT WE LOOK AT</span><span class="preview-label">01 — 05</span></div><div class="preview-lines"><div class="preview-line"></div><div class="preview-line"></div><div class="preview-line"></div></div><div class="preview-bottom"><span class="mini-chip">Availability</span><span class="mini-chip">HTTPS</span><span class="mini-chip orange">Headers</span></div></div>
 </section>
@@ -128,7 +258,35 @@ input::placeholder{color:#98a098}
 </section>
 <section id="results" class="results" hidden aria-live="polite" aria-busy="false"></section>
 </main>
-<footer class="footer"><div><strong>CASTA WEB DOCTOR</strong> · Built for practical checks.</div><div>Early beta · Not a full security audit.</div></footer>
+<section class="seo-guide" aria-labelledby="seo-guide-title">
+  <div class="kicker">Website basics</div>
+  <h2 id="seo-guide-title">A simple website health checker</h2>
+  <p>Casta Web Doctor is a free website checker for developers, learners and small-business owners who want a quick first look at a public website. Enter a website address to review its HTTP response, response time, HTTPS connection, redirects and selected browser security headers.</p>
+  <div class="seo-guide-grid">
+    <article><h3>Check website availability</h3><p>Review the HTTP status code to understand whether a server responded successfully or returned an error. A single check is only a snapshot, not an uptime guarantee.</p></article>
+    <article><h3>Measure response time</h3><p>See how long the request took to receive response headers. This is a basic diagnostic measurement, not a full page-load or Core Web Vitals test.</p></article>
+    <article><h3>Review HTTPS and redirects</h3><p>Check whether the final connection uses HTTPS and see how many redirects occurred. HTTPS helps protect data in transit, but does not by itself prove a site is trustworthy.</p></article>
+    <article><h3>Understand security headers</h3><p>Learn whether selected browser security headers are present, with plain-language explanations. Results are informational and do not replace a professional security review.</p></article>
+  </div>
+  <h3>Frequently asked questions</h3>
+  <details><summary>Is Casta Web Doctor free?</summary><p>Yes. The website checker is offered free of charge during its early beta.</p></details>
+  <details><summary>Does this tool prove a website is secure?</summary><p>No. It performs limited checks only. A missing header is not automatically a vulnerability, and a successful result is not a security certification.</p></details>
+  <details><summary>Can I scan any website?</summary><p>Only scan websites you own or have explicit permission to assess. Do not submit private addresses, credentials or confidential information.</p></details>
+</section>
+<style>
+.seo-guide{padding:0 0 70px;max-width:850px}
+.seo-guide h2{font:500 clamp(30px,4vw,42px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.04em;margin:14px 0}
+.seo-guide>p,.seo-guide-grid p,.seo-guide details p{font-size:13px;color:var(--muted);line-height:1.8}
+.seo-guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:24px 0 30px}
+.seo-guide-grid article{border:1px solid var(--line);border-radius:10px;padding:17px;background:rgba(255,255,255,.5)}
+.seo-guide-grid h3,.seo-guide>h3{font-size:13px;margin:0 0 6px}
+.seo-guide-grid p{margin:0}
+.seo-guide details{border-bottom:1px solid var(--line);padding:14px 0}
+.seo-guide summary{cursor:pointer;font-size:13px;font-weight:750}
+.seo-guide details p{margin:8px 0 0}
+@media(max-width:560px){.seo-guide{padding-bottom:46px}.seo-guide-grid{grid-template-columns:1fr}}
+</style>
+<footer class="footer"><div><strong>CASTA WEB DOCTOR</strong> · Built for practical checks.<div class="policy-links"><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a><a href="https://github.com/ebe-ship-it/casta-web-doctor/blob/security/ssrf-hardening/ACCEPTABLE_USE.md" target="_blank" rel="noopener noreferrer">Acceptable use</a></div></div><div>Early beta · Not a full security audit.</div></footer>
 </div>
 <script>
 (function(){
@@ -139,6 +297,30 @@ const button=document.getElementById('scan-btn');
 const buttonLabel=document.getElementById('button-label');
 const errorBox=document.getElementById('error');
 const results=document.getElementById('results');
+const trustTitle=document.getElementById('trust-title');
+const trustNote=document.getElementById('trust-note');
+const trustState=document.getElementById('trust-state');
+const trustMessages=[
+{title:'Transparent by design',note:'Clear checks, plain-language findings, no claim of a full security audit.',state:'Built for clarity'},
+{title:'Your scan, explained',note:'See response status, timing, redirects and common security headers.',state:'Understand the results'},
+{title:'Privacy-conscious checks',note:'No account is needed. Only submit public websites you are allowed to assess.',state:'No account needed'},
+{title:'Honest about limitations',note:'A successful response is not proof that a website is completely safe.',state:'No false guarantees'}
+];
+let trustIndex=0;
+if(trustTitle&&trustNote&&trustState&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){window.setInterval(function(){trustIndex=(trustIndex+1)%trustMessages.length;const next=trustMessages[trustIndex];trustTitle.textContent=next.title;trustNote.textContent=next.note;trustState.textContent=next.state;},4800);}
+const scanLog=document.getElementById('scan-log');
+const scanLogList=document.getElementById('scan-log-list');
+const scanLogState=document.getElementById('scan-log-state');
+let scanStartedAt=0;
+const renderLog=function(message,state){
+const item=document.createElement('li');
+item.className=state==='active'?'active':'';
+const mark=document.createElement('span');mark.className='log-mark';mark.textContent=state==='active'?'…':(state==='failed'?'!':'✓');
+const label=document.createElement('span');label.textContent=message;
+const time=document.createElement('span');time.className='log-time';time.textContent=((Date.now()-scanStartedAt)/1000).toFixed(1)+'s';
+item.append(mark,label,time);scanLogList.append(item);
+scanLogState.textContent=state==='active'?'In progress':(state==='failed'?'Stopped':'Updated');
+};
 const escapeHtml=function(value){return String(value==null?'':value).replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
 const isGoodStatus=function(status){return Number(status)>=200&&Number(status)<400;};
 form.addEventListener('submit',async function(event){
@@ -146,13 +328,40 @@ event.preventDefault();
 errorBox.hidden=true;
 results.hidden=true;
 results.setAttribute('aria-busy','true');
+scanLog.hidden=false;scanLogList.replaceChildren();scanStartedAt=Date.now();
 button.disabled=true;
-buttonLabel.textContent='Checking…';
+buttonLabel.textContent='Scanning…';
+results.innerHTML='<div class="results-head"><div><div class="kicker">Live scan</div><h2>Checking the website.</h2><div class="result-url">Waiting for verified scanner events…</div></div><span class="result-badge">IN PROGRESS</span></div><div class="results-loading"><span class="loader-orbit" aria-hidden="true"></span><div><strong id="result-loading-title">Connecting to scanner</strong><p id="result-loading-note">The report will appear when the scan finishes.</p></div></div>';
+results.classList.remove('is-ready');results.classList.add('is-loading');results.hidden=false;
+results.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
 try{
-const response=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({url:input.value.trim()}),credentials:'same-origin'});
-let data;
-try{data=await response.json();}catch(parseError){throw new Error('The scanner returned an unreadable response. Please try again.');}
-if(!response.ok||!data||!data.ok){const message=data&&data.error&&data.error.message;throw new Error(message||'The scan could not be completed. Please try again.');}
+const response=await fetch('/api/scan/stream',{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({url:input.value.trim(),authorized:document.getElementById('authorized').checked}),credentials:'same-origin'});
+if(!response.ok){
+let failure;try{failure=await response.json();}catch(ignore){}
+throw new Error(failure&&failure.error&&failure.error.message||'The scan could not be started.');
+}
+if(!response.body)throw new Error('Live progress is not supported by this browser.');
+const reader=response.body.getReader();
+const decoder=new TextDecoder();
+let buffer='';
+let data=null;
+while(true){
+const chunk=await reader.read();
+if(chunk.done)break;
+buffer+=decoder.decode(chunk.value,{stream:true});
+let boundary;
+while((boundary=buffer.indexOf('\n\n'))!==-1){
+const frame=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2);
+const line=frame.split('\n').find(function(part){return part.indexOf('data:')===0;});
+if(!line)continue;
+let event;try{event=JSON.parse(line.slice(5).trim());}catch(ignore){continue;}
+if(event.type==='progress'){renderLog(event.message,event.stage==='completed'?'done':(event.stage==='blocked'?'failed':'active'));const loadingTitle=document.getElementById('result-loading-title');const loadingNote=document.getElementById('result-loading-note');if(loadingTitle)loadingTitle.textContent=event.message;if(loadingNote)loadingNote.textContent='Live event from the scanner · '+((Date.now()-scanStartedAt)/1000).toFixed(1)+' seconds elapsed';}
+if(event.type==='result')data=event.result;
+}
+}
+if(!data)throw new Error('The scan stream ended before a report was received.');
+if(!data.ok){results.hidden=true;results.classList.remove('is-loading');renderLog(data.error&&data.error.message||'Scan failed','failed');scanLogState.textContent='Stopped';throw new Error(data.error&&data.error.message||'The scan could not be completed.');}
+
 const headers=Array.isArray(data.security_headers)?data.security_headers:[];
 const rows=headers.map(function(header){
 const present=Boolean(header.present);
@@ -169,10 +378,14 @@ results.innerHTML='<div class="results-head"><div><div class="kicker">Your scan 
 '<div class="section-heading"><h3>Security headers</h3><span>'+headers.filter(function(item){return item.present;}).length+' of '+headers.length+' detected</span></div>'+
 (rows||'<p class="result-url">No security header details were returned.</p>')+
 '<p class="report-note">Context matters: a missing header is not automatically a vulnerability. These results are a first-pass check, not a full audit or a guarantee that a site is safe.</p>';
+renderLog('Scan completed and report received','done');scanLogState.textContent='Complete';
+results.classList.remove('is-loading');results.classList.add('is-ready');
 results.hidden=false;
 results.setAttribute('aria-busy','false');
 results.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
 }catch(error){
+results.classList.remove('is-loading');results.hidden=true;results.setAttribute('aria-busy','false');
+renderLog('Scan stopped: '+(error.message||'request failed'),'failed');scanLogState.textContent='Stopped';
 errorBox.textContent=error instanceof TypeError?'Could not reach the scanner. Check your connection and try again.':(error.message||'Something went wrong. Please try again.');
 errorBox.hidden=false;
 results.setAttribute('aria-busy','false');
