@@ -333,6 +333,7 @@ results.hidden=false;
 results.setAttribute('aria-busy','false');
 results.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
 }catch(error){
+results.classList.remove('is-loading');results.hidden=true;results.setAttribute('aria-busy','false');
 renderLog('Scan stopped: '+(error.message||'request failed'),'failed');scanLogState.textContent='Stopped';
 errorBox.textContent=error instanceof TypeError?'Could not reach the scanner. Check your connection and try again.':(error.message||'Something went wrong. Please try again.');
 errorBox.hidden=false;
