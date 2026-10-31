@@ -284,7 +284,7 @@ results.innerHTML='<div class="results-head"><div><div class="kicker">Live scan<
 results.classList.remove('is-ready');results.classList.add('is-loading');results.hidden=false;
 results.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
 try{
-const response=await fetch('/api/scan/stream',{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({url:input.value.trim()}),credentials:'same-origin'});
+const response=await fetch('/api/scan/stream',{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({url:input.value.trim(),authorized:document.getElementById('authorized').checked}),credentials:'same-origin'});
 if(!response.ok){
 let failure;try{failure=await response.json();}catch(ignore){}
 throw new Error(failure&&failure.error&&failure.error.message||'The scan could not be started.');
